@@ -256,7 +256,7 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
 <script>
 const $ = s => document.querySelector(s);
 // Live engine: same origin when served by the engine itself, the hosted Space otherwise.
-const HOSTED_API = 'https://uchihadzoro-trinetra-sr.hf.space';
+const HOSTED_API = 'https://silent-whisper-trinetra-sr.hf.space';
 const API = (location.hostname.endsWith('github.io') || location.protocol === 'file:') ? HOSTED_API : '';
 const assetBase = a => a.base ? (API ? API + '/' : '') + a.base : `data/${a.id}/`;
 const state = { aois: [], cur: null, mode: 'sr', pos: 50, z: 1, tx: 0, ty: 0 };
