@@ -20,6 +20,9 @@
     for (const e of entries) if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
   }, { rootMargin: '-45% 0px -50% 0px' });
   $$('main section[id]').forEach(s => sectionObs.observe(s));
+  addEventListener('scroll', () => {          // the last section never reaches mid-screen: light it at the page bottom
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) links.forEach((l, i) => l.classList.toggle('on', i === links.length - 1));
+  }, { passive: true });
   const revealObs = new IntersectionObserver(entries => {
     for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); revealObs.unobserve(e.target); }
   }, { threshold: 0.12 });
