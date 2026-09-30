@@ -59,7 +59,7 @@ table.m th{background:var(--navy);color:#fff;font:700 18px Inter, Arial, sans-se
 table.m th:first-child{border-top-left-radius:12px}table.m th:last-child{border-top-right-radius:12px}
 table.m td{padding:9px 14px;border-bottom:1px solid var(--line)}
 table.m tr:nth-child(even) td{background:#F6F8FC}
-.lvl{display:inline-block;font:800 15px Inter, Arial, sans-serif;padding:3px 12px;border-radius:999px;color:#fff}
+.lvl{display:block;width:72px;height:26px;line-height:26px;text-align:center;font:800 15px Inter, Arial, sans-serif;border-radius:999px;color:#fff}
 </style>
 </head>
 <body>
@@ -99,19 +99,19 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="card" style="left:52px;top:178px;width:560px;height:220px;background:var(--navy);color:#fff">
     <div style="font:800 17px Inter, Arial, sans-serif;letter-spacing:1.4px;color:#FFB454">PS 26142 · NTRO · SPACE TECHNOLOGY</div>
     <div style="font:700 25px/1.3 Montserrat, Arial, sans-serif;margin:10px 0 12px">Deep-learning super-resolution mapping from medium-resolution satellite imagery</div>
-    <div style="font:500 18px/1.45 Inter, Arial, sans-serif;color:#C9D6EA"><b style="color:#fff">The ask:</b> Sentinel-2 10 m → below 4 m, keep geospatial &amp; spectral consistency, handle uncertainty, validate against high-resolution references.</div>
+    <div style="font:500 18px/1.45 Inter, Arial, sans-serif;color:#C9D6EA"><b style="color:#fff">The ask:</b> Sentinel-2 10 m → below 4 m, consistent geometry &amp; spectra, explicit uncertainty, HR validation.</div>
   </div>
   <!-- problem gap solution -->
   <div class="card" style="left:640px;top:178px;width:380px;height:220px;background:var(--saff-t)">
     <div class="h" style="color:var(--saff)"><span class="ic" style="background:var(--saff)"><img src="img/ic/warn.png" alt=""></span>PROBLEM</div>
     <div class="t" style="margin-top:12px;font-size:19px">A 10 m pixel is wider than most roofs, lanes and field bunds, so fine-scale mapping, change detection and damage assessment suffer.</div>
   </div>
-  <div class="arrow" style="left:1026px;top:286px;width:26px"></div>
+  <div class="abs" style="left:1022px;top:267px;width:38px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <div class="card" style="left:1060px;top:178px;width:380px;height:220px;background:var(--rose-t)">
     <div class="h" style="color:var(--rose)"><span class="ic" style="background:var(--rose)"><img src="img/ic/crosshairs.png" alt=""></span>GAP</div>
     <div class="t" style="margin-top:12px;font-size:19px">Commercial VHR imagery is costly and must be tasked. Generic SR hallucinates, alters radiometry and reports no confidence.</div>
   </div>
-  <div class="arrow" style="left:1446px;top:286px;width:26px"></div>
+  <div class="abs" style="left:1442px;top:267px;width:38px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <div class="card" style="left:1480px;top:178px;width:388px;height:220px;background:var(--green-t)">
     <div class="h" style="color:var(--green)"><span class="ic" style="background:var(--green)"><img src="img/ic/check.png" alt=""></span>SOLUTION</div>
     <div class="t" style="margin-top:12px;font-size:19px"><b class="b">TRINETRA-SR</b>: physics-constrained 4× SR on all 10 bands, with a per-pixel trust map, running anywhere, even offline.</div>
@@ -188,16 +188,16 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   </div>
   <!-- row 1 -->
   <div class="abs" style="left:74px;top:282px;width:176px;height:96px;background:#fff;border:2px solid var(--line);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">① Input</div><div class="sub">AOI + dates<br>or GeoTIFF</div></div>
-  <div class="arrow" style="left:252px;top:328px;width:20px"></div>
+  <div class="abs" style="left:248px;top:309px;width:32px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <div class="abs" style="left:280px;top:282px;width:176px;height:96px;background:#fff;border:2px solid var(--line);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">② STAC search</div><div class="sub">Earth Search<br>L2A · &lt;20% cloud</div></div>
-  <div class="arrow" style="left:458px;top:328px;width:20px"></div>
+  <div class="abs" style="left:454px;top:309px;width:32px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <div class="abs" style="left:486px;top:282px;width:176px;height:96px;background:var(--saff-t);border:2px solid var(--saff);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">③ Cloud check</div><div class="sub">SCL mask<br>clear ≥ 97 %</div></div>
-  <div class="arrow" style="left:664px;top:328px;width:20px"></div>
+  <div class="abs" style="left:660px;top:309px;width:32px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <div class="abs" style="left:692px;top:282px;width:176px;height:96px;background:#fff;border:2px solid var(--line);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">④ COG read</div><div class="sub">window only<br>10 bands</div></div>
-  <div class="arrow" style="left:870px;top:328px;width:20px"></div>
+  <div class="abs" style="left:866px;top:309px;width:32px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <div class="abs" style="left:898px;top:282px;width:190px;height:96px;background:#fff;border:2px solid var(--line);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">⑤ Harmonise</div><div class="sub">baseline-04<br>÷ 10 000 · stack</div></div>
-  <div class="abs" style="left:990px;top:382px;width:4px;height:52px;background:#9AA4B6"></div>
-  <div class="abs" style="left:982px;top:428px;border-top:14px solid #9AA4B6;border-left:10px solid transparent;border-right:10px solid transparent"></div>
+  <div class="abs" style="left:990px;top:382px;width:4px;height:36px;background:#8C97AB"></div>
+  <div class="abs" style="left:972px;top:414px;width:40px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">↓</div>
   <div class="abs" style="left:486px;top:384px;width:176px;text-align:center;font:italic 600 15px Inter, Arial, sans-serif;color:var(--saff)">next scene if cloudy</div>
   <!-- row 2 (right to left) -->
   <div class="abs" style="left:898px;top:448px;width:190px;height:96px;background:#fff;border:2px solid var(--line);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">⑥ Tile</div><div class="sub">128 px · 32 px<br>feathered overlap</div></div>
@@ -205,10 +205,10 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs" style="left:486px;top:448px;width:176px;height:96px;background:var(--green-t);border:2px solid var(--green);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">⑧ 8× TTA</div><div class="sub">mean + σ<br>per pixel</div></div>
   <div class="abs" style="left:280px;top:448px;width:176px;height:96px;background:#fff;border:2px solid var(--line);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">⑨ Validate</div><div class="sub">PSNR · SAM<br>ΔNDVI</div></div>
   <div class="abs" style="left:74px;top:448px;width:176px;height:96px;background:var(--violet-t);border:2px solid var(--violet);border-radius:14px;text-align:center;padding-top:12px"><div class="b" style="font-size:19px">⑩ Deliver</div><div class="sub">GeoTIFF · σ<br>viewer</div></div>
-  <div class="arrow" style="left:872px;top:494px;width:22px;transform:rotate(180deg)"></div>
-  <div class="arrow" style="left:666px;top:494px;width:22px;transform:rotate(180deg)"></div>
-  <div class="arrow" style="left:460px;top:494px;width:22px;transform:rotate(180deg)"></div>
-  <div class="arrow" style="left:254px;top:494px;width:22px;transform:rotate(180deg)"></div>
+  <div class="abs" style="left:868px;top:475px;width:34px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">←</div>
+  <div class="abs" style="left:662px;top:475px;width:34px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">←</div>
+  <div class="abs" style="left:456px;top:475px;width:34px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">←</div>
+  <div class="abs" style="left:250px;top:475px;width:34px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">←</div>
 
   <!-- system architecture (layered) -->
   <div class="card" style="left:1132px;top:214px;width:736px;height:352px;background:#F4F7FB;padding:18px 22px">
@@ -221,13 +221,13 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs" style="left:1170px;top:424px;width:418px;height:52px;border-radius:12px;background:var(--saff-t);padding:6px 14px"><div class="b" style="font-size:17px">Inference runtime</div><div class="sub" style="font-size:14px">ONNX Runtime Web · WASM / WebGPU · 19 MB</div></div>
   <div class="abs" style="left:1170px;top:484px;width:418px;height:52px;border-radius:12px;background:var(--violet-t);padding:6px 14px"><div class="b" style="font-size:17px">Products</div><div class="sub" style="font-size:14px">TTA σ · metrics · GeoTIFF writer</div></div>
   <div class="abs" style="left:1632px;top:268px;width:220px;display:flex;flex-direction:column;gap:10px">
-    <div class="logo" style="font-size:15px;padding:6px 10px"><img src="img/ic/sat.png" alt="" style="width:22px;height:22px;background:var(--teal);border-radius:50%;padding:3px">Earth Search STAC</div>
-    <div class="logo" style="font-size:15px;padding:6px 10px"><img src="img/ic/cloud.png" alt="" style="width:22px;height:22px;background:var(--saff);border-radius:50%;padding:3px">AWS S3 · S2 COGs</div>
+    <div class="logo" style="font-size:15px;padding:6px 10px"><span class="ic sm" style="background:var(--teal);width:28px;height:28px"><img src="img/ic/sat.png" alt="" style="width:16px;height:16px"></span>Earth Search STAC</div>
+    <div class="logo" style="font-size:15px;padding:6px 10px"><span class="ic sm" style="background:var(--saff);width:28px;height:28px"><img src="img/ic/cloud.png" alt="" style="width:16px;height:16px"></span>AWS S3 · S2 COGs</div>
     <div class="logo" style="font-size:15px;padding:6px 10px"><img src="img/logo_openstreetmap.png" alt="" style="width:22px;height:22px">Photon / OSM</div>
     <div class="logo" style="font-size:15px;padding:6px 10px"><img src="img/logo_github.png" alt="" style="width:22px;height:22px">GitHub Pages</div>
     <div class="logo" style="font-size:15px;padding:6px 10px;border-style:dashed"><img src="img/logo_pytorch.png" alt="" style="width:22px;height:22px">Python → ONNX</div>
   </div>
-  <div class="arrow" style="left:1606px;top:410px;width:22px;transform:rotate(180deg)"></div>
+  <div class="abs" style="left:1602px;top:391px;width:34px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">←</div>
 
   <!-- bottom band -->
   <div class="abs ptr" style="left:52px;top:584px;font-size:23px"><span class="dia"></span><u>Technologies to be used (e.g. programming languages, frameworks, hardware)</u></div>
@@ -309,15 +309,15 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="slab" style="left:280px;top:250px;width:20px;height:108px;background:#8FB3FF"></div>
   <div class="lbl" style="left:224px;top:386px;width:110px">Encoder</div>
   <div class="abs sub" style="left:224px;top:410px;width:110px;text-align:center">conv 3×3</div>
-  <div class="arrow" style="left:206px;top:318px;width:34px"></div>
-  <div class="arrow" style="left:316px;top:318px;width:30px"></div>
+  <div class="abs" style="left:202px;top:299px;width:46px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
+  <div class="abs" style="left:312px;top:299px;width:42px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <!-- temporal attention -->
   <div class="abs" style="left:356px;top:260px;width:150px;height:116px;border:3px dashed var(--saff);border-radius:14px;background:var(--saff-t);display:flex;flex-direction:column;align-items:center;justify-content:center">
     <div style="display:flex;gap:6px"><span style="width:18px;height:18px;border-radius:50%;background:#F7B267"></span><span style="width:18px;height:18px;border-radius:50%;background:#F28C28"></span><span style="width:18px;height:18px;border-radius:50%;background:#D96E0B"></span></div>
     <div class="b" style="font-size:16px;margin-top:8px;text-align:center">Temporal<br>attention</div>
   </div>
   <div class="abs sub" style="left:346px;top:386px;width:170px;text-align:center">fuse K revisits</div>
-  <div class="arrow" style="left:512px;top:318px;width:30px"></div>
+  <div class="abs" style="left:508px;top:299px;width:42px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <!-- backbone: repeated blocks -->
   <div class="slab" style="left:556px;top:262px;width:34px;height:112px;background:#FAD0A3"></div>
   <div class="slab" style="left:598px;top:262px;width:34px;height:112px;background:#F8BD7E"></div>
@@ -326,14 +326,14 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs" style="left:552px;top:238px;width:170px;text-align:center;font:700 15px Inter, Arial, sans-serif;color:var(--saff)">N × SPAN / Swin</div>
   <div class="lbl" style="left:540px;top:386px;width:190px">SR backbone</div>
   <div class="abs sub" style="left:540px;top:410px;width:190px;text-align:center">attention blocks</div>
-  <div class="arrow" style="left:724px;top:318px;width:30px"></div>
+  <div class="abs" style="left:720px;top:299px;width:42px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <!-- pixel shuffle: growing slabs -->
   <div class="slab" style="left:766px;top:292px;width:26px;height:52px;background:#FAD0A3"></div>
   <div class="slab" style="left:800px;top:276px;width:26px;height:84px;background:#F6A95A"></div>
   <div class="slab" style="left:834px;top:258px;width:26px;height:120px;background:#F28C28"></div>
   <div class="lbl" style="left:750px;top:386px;width:130px">Pixel-shuffle</div>
   <div class="abs sub" style="left:750px;top:410px;width:130px;text-align:center">×4 upsample</div>
-  <div class="arrow" style="left:866px;top:318px;width:30px"></div>
+  <div class="abs" style="left:862px;top:299px;width:42px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <!-- constraint -->
   <div class="abs" style="left:906px;top:256px;width:318px;height:122px;border:3px solid var(--blue);border-radius:16px;background:var(--blue-t);padding:10px 14px;text-align:center">
     <div class="b" style="font-size:18px;color:var(--blue)">Low-frequency hard constraint</div>
@@ -343,7 +343,7 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs" style="left:190px;top:232px;width:900px;border-top:3px dashed var(--blue)"></div>
   <div class="abs" style="left:1088px;top:232px;width:3px;height:22px;background:var(--blue)"></div>
   <div class="abs" style="left:560px;top:212px;font:italic 600 15px Inter, Arial, sans-serif;color:var(--blue)">skip · U(x): antialiased bicubic ×4 (the measurement's low frequencies)</div>
-  <div class="arrow" style="left:1230px;top:318px;width:30px"></div>
+  <div class="abs" style="left:1226px;top:299px;width:42px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
   <!-- output stack -->
   <img class="abs" src="img/blr_sr.jpg" alt="" style="left:1292px;top:248px;width:124px;height:124px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 2px #9FD5AE;opacity:.5">
   <img class="abs" src="img/blr_sr.jpg" alt="" style="left:1282px;top:258px;width:124px;height:124px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 2px #9FD5AE;opacity:.75">
@@ -354,14 +354,14 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs" style="left:1462px;top:236px;width:390px;height:98px;border:3px solid var(--green);border-radius:14px;background:var(--green-t);padding:10px 14px">
     <div class="b" style="font-size:17px;color:var(--green)">Trust head · 8× dihedral TTA</div>
     <div class="sub" style="font-size:15px">σ = std of the 8 inverted outputs</div>
-    <div class="eq" style="font-size:17px;margin-top:4px">P( y ∈ ŷ ± q̂·σ ) ≥ 1 − α <span class="tag v2" style="font-size:12px">CONFORMAL · V2</span></div>
+    <div class="eq" style="font-size:17px;margin-top:4px">conformal (v2):  P( y ∈ ŷ ± q̂·σ ) ≥ 1 − α</div>
   </div>
   <div class="abs" style="left:1462px;top:346px;width:390px;height:98px;border:3px dashed var(--saff);border-radius:14px;background:var(--saff-t);padding:10px 14px">
     <div class="b" style="font-size:17px;color:var(--saff)">Detail refiner · diffusion / flow (v2)</div>
     <div class="sub" style="font-size:15px">4–15 steps, predicts high-freq residual r</div>
-    <div class="eq" style="font-size:17px;margin-top:4px">ŷ<sub>λ</sub> = ŷ + λ·r ,  λ ∈ [0, 1]  (Fidelity ↔ Detail)</div>
+    <div class="eq" style="font-size:17px;margin-top:4px">dial:  ŷλ = ŷ + λ·r ,  λ ∈ [0, 1]</div>
   </div>
-  <div class="arrow" style="left:1418px;top:300px;width:36px"></div>
+  <div class="abs" style="left:1414px;top:281px;width:48px;text-align:center;font:800 32px Inter, Arial, sans-serif;color:#8C97AB;line-height:1">→</div>
 
   <!-- three pillars -->
   <div class="abs" style="left:52px;top:486px;width:1816px;display:flex;gap:18px">
@@ -455,8 +455,8 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
     <div class="trow alt"><div style="width:380px">Pixels flagged (σ &gt; 0.01)</div><div class="b" style="width:150px">0.05 %</div><div style="width:190px">0 – 0.19</div><div style="width:150px">&lt; 5 %</div></div>
   </div>
   <!-- impact -->
-  <div class="abs ptr" style="left:980px;top:522px;font-size:21px"><span class="dia"></span><u>Potential impact on the target audience</u></div>
-  <div class="abs" style="left:980px;top:562px;width:888px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+  <div class="abs ptr" style="left:980px;top:410px;font-size:21px"><span class="dia"></span><u>Potential impact on the target audience</u></div>
+  <div class="abs" style="left:980px;top:450px;width:888px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
     <div style="display:flex;gap:10px;align-items:center;background:#F4F7FB;border-radius:16px;padding:12px"><span class="ic" style="background:var(--blue)"><img src="img/ic/lock2.png" alt=""></span><div><div class="b" style="font-size:17px">Defence &amp; intel</div><div class="sub" style="font-size:14px">site look, no VHR tasking</div></div></div>
     <div style="display:flex;gap:10px;align-items:center;background:#F4F7FB;border-radius:16px;padding:12px"><span class="ic" style="background:var(--rose)"><img src="img/ic/flood.png" alt=""></span><div><div class="b" style="font-size:17px">Disaster response</div><div class="sub" style="font-size:14px">landslides, floods at 2.5 m</div></div></div>
     <div style="display:flex;gap:10px;align-items:center;background:#F4F7FB;border-radius:16px;padding:12px"><span class="ic" style="background:var(--green)"><img src="img/ic/wheat.png" alt=""></span><div><div class="b" style="font-size:17px">Agriculture</div><div class="sub" style="font-size:14px">field-level NDVI, bunds</div></div></div>
@@ -464,18 +464,18 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
     <div style="display:flex;gap:10px;align-items:center;background:#F4F7FB;border-radius:16px;padding:12px"><span class="ic" style="background:var(--teal)"><img src="img/ic/water.png" alt=""></span><div><div class="b" style="font-size:17px">Water &amp; forests</div><div class="sub" style="font-size:14px">ponds, shorelines, forest loss</div></div></div>
     <div style="display:flex;gap:10px;align-items:center;background:#F4F7FB;border-radius:16px;padding:12px"><span class="ic" style="background:var(--violet)"><img src="img/ic/grad.png" alt=""></span><div><div class="b" style="font-size:17px">Research</div><div class="sub" style="font-size:14px">open, runs on a laptop</div></div></div>
   </div>
-  <div class="abs ptr" style="left:980px;top:760px;font-size:21px"><span class="dia"></span><u>Benefits of the solution (social, economic, environmental, etc.)</u></div>
-  <div class="abs" style="left:980px;top:800px;width:888px;display:flex;gap:12px">
+  <div class="abs ptr" style="left:980px;top:626px;font-size:21px"><span class="dia"></span><u>Benefits of the solution (social, economic, environmental, etc.)</u></div>
+  <div class="abs" style="left:980px;top:666px;width:888px;display:flex;gap:12px">
     <div style="flex:1;border-radius:16px;padding:12px 14px;background:var(--blue-t)"><div class="b" style="font-size:18px;color:var(--blue)">Social</div><div class="t" style="font-size:15px;line-height:1.4">faster relief, farm advisories</div></div>
     <div style="flex:1;border-radius:16px;padding:12px 14px;background:var(--saff-t)"><div class="b" style="font-size:18px;color:var(--saff)">Economic</div><div class="t" style="font-size:15px;line-height:1.4">2.5 m-class from free data</div></div>
     <div style="flex:1;border-radius:16px;padding:12px 14px;background:var(--green-t)"><div class="b" style="font-size:18px;color:var(--green)">Environmental</div><div class="t" style="font-size:15px;line-height:1.4">finer land &amp; water monitoring</div></div>
     <div style="flex:1;border-radius:16px;padding:12px 14px;background:var(--violet-t)"><div class="b" style="font-size:18px;color:var(--violet)">Strategic</div><div class="t" style="font-size:15px;line-height:1.4">sovereign, offline capability</div></div>
   </div>
   <!-- wayanad evidence -->
-  <div class="abs" style="left:980px;top:900px;width:888px;display:flex;align-items:center;gap:14px">
-    <img src="img/way_10m.jpg" alt="" style="width:84px;height:84px;border-radius:10px">
-    <img src="img/way_sr.jpg" alt="" style="width:84px;height:84px;border-radius:10px;outline:3px solid var(--green)">
-    <div class="t" style="font-size:16px"><b class="b">Wayanad, Kerala:</b> the July 2024 debris-flow track at 10 m (left) and 2.5 m (right), from the live prototype.</div>
+  <div class="abs" style="left:980px;top:792px;width:888px;display:flex;align-items:center;gap:16px">
+    <img src="img/way_10m.jpg" alt="" style="width:170px;height:170px;border-radius:12px">
+    <img src="img/way_sr.jpg" alt="" style="width:170px;height:170px;border-radius:12px;outline:4px solid var(--green)">
+    <div><div class="b" style="font-size:19px">Wayanad, Kerala · 24 Feb 2025</div><div class="t" style="font-size:17px">July 2024 debris-flow track: Sentinel-2 at 10 m (left) vs TRINETRA-SR at 2.5 m (right), straight from the live prototype.</div></div>
   </div>
   <div class="foot">@SIH Idea submission- Template<span class="no">5</span></div>
 </section>
@@ -489,11 +489,11 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
 
   <div class="abs" style="left:52px;top:214px;display:flex;align-items:center;gap:12px"><span class="ic sm" style="background:var(--violet)"><img src="img/ic/flask.png" alt=""></span><div style="font:800 20px Montserrat, Arial, sans-serif;color:var(--navy)">KEY FINDINGS → OUR DESIGN DECISIONS</div></div>
   <div class="abs" style="left:52px;top:256px;width:1240px;display:flex;flex-direction:column;gap:12px;font-size:19.5px">
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t" ><b class="b">SEN2SR [1]:</b> a low-frequency hard constraint gives radiometric consistency; &gt; 15 M parameters brought no significant gain.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Keep the constraint; compact backbone.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">GeoSR-Bench [13]:</b> PSNR/SSIM gains often do not track downstream-task gains.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Validate on buildings, roads, bunds.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">LDSR-S2 [6]:</b> the only prior S2 SR with pixel-wise uncertainty, but diffusion is slow.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">TTA σ now; diffusion as optional refiner.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">SEN2NAIP [9]:</b> 2,851 real + 17,657 synthetic pairs; real pairs are mis-registered.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Synthetic pre-train, shift-tolerant tuning.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">HighRes-net · WorldStrat · MuS2 [8, 10, 11]:</b> revisits add true sub-pixel information.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Temporal attention front-end (v2).</b></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t" ><b class="b">SEN2SR [1]:</b> a low-frequency hard constraint gives radiometric consistency; &gt; 15 M parameters brought no significant gain.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">Keep the constraint; compact backbone.</b></div></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">GeoSR-Bench [13]:</b> PSNR/SSIM gains often do not track downstream-task gains.</div></div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">Validate on buildings, roads, bunds.</b></div></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">LDSR-S2 [6]:</b> the only prior S2 SR with pixel-wise uncertainty, but diffusion is slow.</div></div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">TTA σ now; diffusion as optional refiner.</b></div></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">SEN2NAIP [9]:</b> 2,851 real + 17,657 synthetic pairs; real pairs are mis-registered.</div></div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">Synthetic pre-train, shift-tolerant tuning.</b></div></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">HighRes-net · WorldStrat · MuS2 [8, 10, 11]:</b> revisits add true sub-pixel information.</div></div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;display:flex;align-items:center"><div class="t" style="margin:10px 18px;font-size:18px;line-height:1.38"><b class="b">Temporal attention front-end (v2).</b></div></div></div>
   </div>
 
   <div class="abs" style="left:52px;top:690px;display:flex;align-items:center;gap:12px"><span class="ic sm" style="background:var(--blue)"><img src="img/ic/book.png" alt=""></span><div style="font:800 20px Montserrat, Arial, sans-serif;color:var(--navy)">REFERENCES BY DOMAIN</div></div>
