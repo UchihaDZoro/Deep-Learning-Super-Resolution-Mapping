@@ -9,6 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
+<script src="engine.js"></script>
 <style>
 :root{
   --bg:#0b0f17; --panel:#121826; --panel2:#182033; --line:#243049;
@@ -147,9 +151,9 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
     <div class="livepanel">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <h3>Run it yourself</h3>
-        <span class="status"><span class="dot" id="engDot"></span><span id="engTxt">checking engine…</span></span>
+        <span class="status"><span class="dot" id="engDot"></span><span id="engTxt">loading engine…</span></span>
       </div>
-      <p class="sub">Click anywhere on the map. The engine finds the clearest recent Sentinel-2 scene and super-resolves it to 2.5 m, with an uncertainty map, metrics and GeoTIFF downloads.</p>
+      <p class="sub">Click anywhere on the map. Your browser finds the clearest recent Sentinel-2 scene, runs the SR network locally (no server, nothing uploaded) and returns 2.5 m imagery, an uncertainty map, metrics and GeoTIFFs.</p>
       <div class="presets" id="presets"></div>
       <div class="row">
         <label class="fld">Latitude<input id="lat" type="number" step="0.0001" value="17.3850"></label>
@@ -161,7 +165,7 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
       </div>
       <div class="row">
         <label class="fld">Area
-          <select id="size"><option value="128" selected>1.28 km (fast)</option><option value="192">1.92 km</option><option value="256">2.56 km (slow)</option></select></label>
+          <select id="size"><option value="128" selected>1.28 km (~10 s)</option><option value="192">1.92 km (~30 s)</option><option value="256">2.56 km (~1 min)</option></select></label>
         <label class="fld">Uncertainty passes
           <select id="tta"><option value="2">2 (fastest)</option><option value="4" selected>4</option><option value="8">8 (best)</option></select></label>
       </div>
@@ -249,16 +253,14 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
 
   <footer>
     Prototype v1 for Smart India Hackathon · PS 26142 (NTRO): Deep Learning Based Super Resolution Mapping from Medium Resolution Satellite Imagery.<br>
-    Contains modified Copernicus Sentinel data (processed via Microsoft Planetary Computer). v1 inference engine: SEN2SR-Lite (ESA OpenSR, CC-BY) used as the baseline network. The trust layer, consistency checks and pipeline are our own work.
+    Contains modified Copernicus Sentinel data (presets via Microsoft Planetary Computer; live runs read Sentinel-2 COGs on AWS via Element 84 Earth Search). v1 inference engine: SEN2SR-Lite (ESA OpenSR, CC-BY) used as the baseline network. The trust layer, consistency checks and pipeline are our own work.
   </footer>
 </main>
 
 <script>
 const $ = s => document.querySelector(s);
 // Live engine: same origin when served by the engine itself, the hosted Space otherwise.
-const HOSTED_API = 'https://silent-whisper-trinetra-sr.hf.space';
-const API = (location.hostname.endsWith('github.io') || location.protocol === 'file:') ? HOSTED_API : '';
-const assetBase = a => a.base ? (API ? API + '/' : '') + a.base : `data/${a.id}/`;
+const asset = (a, f) => a.urls ? a.urls[f] : `data/${a.id}/${f}`;
 const state = { aois: [], cur: null, mode: 'sr', pos: 50, z: 1, tx: 0, ty: 0 };
 const viewer = $('#viewer'), imgL = $('#imgL'), imgR = $('#imgR'), imgU = $('#imgU');
 
@@ -287,7 +289,7 @@ function render() {
 }
 
 function setImages() {
-  const d = assetBase(state.cur);
+  const a = state.cur;
   $('#loading').style.display = 'grid';
   const m = state.mode;
   const L = m === 'sr' ? 'input.jpg' : m === 'bic' ? 'bicubic.jpg' : 'ndvi_input.jpg';
@@ -297,7 +299,7 @@ function setImages() {
   $('#lblR').textContent = m === 'ndvi' ? 'NDVI · 2.5 m (TRINETRA-SR)' : 'TRINETRA-SR · 2.5 m';
   let n = 0; const done = () => { if (++n === 2) $('#loading').style.display = 'none'; };
   imgL.onload = imgR.onload = done; imgL.onerror = imgR.onerror = done;
-  imgL.src = d + L; imgR.src = d + R; imgU.src = d + 'uncertainty.png';
+  imgL.src = asset(a, L); imgR.src = asset(a, R); imgU.src = asset(a, 'uncertainty.png');
   updateLegend();
 }
 
@@ -318,15 +320,16 @@ function selectAoi(a) {
   $('#aoiMeta').innerHTML = [
     ['Acquired', a.date], ['Scene cloud', a.cloud + ' %'], ['Extent', `${a.extent_km} × ${a.extent_km} km`],
     ['Input / output', '10 m → 2.5 m'], ['Bands', '10 (VNIR + RE + SWIR)'], ['CRS', a.crs],
-    ['Centre', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`],
+    ...(a.lat !== undefined ? [['Centre', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`]] : []),
+    ...(a.backend ? [['Computed', `in your browser · ${a.backend} · ${a.runtime_s}s`]] : []),
   ].map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join('');
   $('#metrics').innerHTML = fmtMetrics(a.metrics);
   const dl = a.downloads;
   $('#dlcard').style.display = dl ? 'block' : 'none';
   if (dl) {
-    const u = p => (API ? API + '/' : '') + p;
-    $('#dls').innerHTML = [['sr', 'Super-resolved · 2.5 m', '10 bands'], ['uncertainty', 'Uncertainty σ · 2.5 m', '10 bands'], ['input', 'Sentinel-2 input · 10 m', '10 bands']]
-      .map(([k, n, s]) => `<a href="${u(dl[k])}" download>${n}<span>${s} · .tif</span></a>`).join('');
+    const tag = a.scene ? a.scene.replace(/[^\w.-]+/g, '_').slice(0, 40) : 'trinetra';
+    $('#dls').innerHTML = [['sr', 'Super-resolved · 2.5 m', '10 bands', '_sr_2p5m'], ['uncertainty', 'Uncertainty σ · 2.5 m', '10 bands', '_uncertainty_2p5m'], ['input', 'Sentinel-2 input · 10 m', '10 bands', '_input_10m']]
+      .map(([k, n, s, suf]) => `<a href="${dl[k]}" download="${tag}${suf}.tif">${n}<span>${s} · .tif</span></a>`).join('');
   }
   setImages(); render();
 }
@@ -431,49 +434,34 @@ if (window.L) {
 $('#size').addEventListener('change', () => syncMap(false));
 $('#presets').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('#lat').value = b.dataset.la; $('#lon').value = b.dataset.lo; syncMap(true); };
 
-let engineOk = false;
-function checkEngine() {
-  fetch(API + '/api/health').then(r => r.json()).then(h => {
-    engineOk = true; $('#engDot').className = 'dot on';
-    $('#engTxt').textContent = `engine online · ${h.pending ? h.pending + ' job(s) queued' : 'idle'}`;
-  }).catch(() => {
-    engineOk = false; $('#engDot').className = 'dot off';
-    $('#engTxt').textContent = 'engine waking up / offline';
-  });
-}
-checkEngine(); setInterval(checkEngine, 20000);
+// ---------------------------------------------------------------- in-browser engine
+const E = window.TrinetraEngine;
+function engineStatus(ok, txt) { $('#engDot').className = 'dot ' + (ok ? 'on' : 'off'); $('#engTxt').textContent = txt; }
+if (E && window.ort && window.GeoTIFF && window.proj4) engineStatus(true, 'in-browser engine ready');
+else engineStatus(false, 'engine libraries failed to load');
 
 function setBusy(b) { $('#run').disabled = b; $('#file').disabled = b; }
 function showProgress(p, stage) { $('#bar').style.width = Math.round(p * 100) + '%'; $('#stage').textContent = stage; }
 
-function poll(id) {
-  fetch(API + '/api/jobs/' + id).then(r => r.json()).then(j => {
-    if (j.status === 'done') {
-      showProgress(1, `Done in ${j.result.runtime_s}s · scene ${j.result.date}`);
-      setBusy(false); addResult(j.result);
-    } else if (j.status === 'error') {
-      showProgress(0, ''); $('#err').textContent = j.error || 'Job failed'; setBusy(false);
-    } else {
-      showProgress(j.progress || 0.02, j.status === 'queued' ? 'Queued: waiting for engine…' : j.stage);
-      setTimeout(() => poll(id), 1500);
-    }
-  }).catch(() => setTimeout(() => poll(id), 3000));
+async function launch(job) {
+  $('#err').textContent = ''; setBusy(true); showProgress(0.01, 'Starting…');
+  try {
+    const r = await job(showProgress);
+    showProgress(1, `Done · model ran in ${r.runtime_s}s on ${r.backend} · scene ${r.date}`);
+    engineStatus(true, `in-browser engine ready · ${r.backend}`);
+    addResult(r);
+  } catch (e) {
+    console.error(e); showProgress(0, '');
+    $('#err').textContent = (e && e.message) || String(e);
+  } finally { setBusy(false); }
 }
-
-function submit(req) {
-  $('#err').textContent = ''; setBusy(true); showProgress(0.02, 'Submitting…');
-  req.then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e.detail || r.statusText)))
-    .then(j => poll(j.id))
-    .catch(e => { setBusy(false); showProgress(0, ''); $('#err').textContent = 'Could not start job: ' + (typeof e === 'string' ? e : JSON.stringify(e)) + (engineOk ? '' : ' (the engine may be waking up; retry in ~30 s)'); });
-}
-$('#run').onclick = () => submit(fetch(API + '/api/jobs', {
-  method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ lat: +$('#lat').value, lon: +$('#lon').value, start: $('#d0').value, end: $('#d1').value, size: +$('#size').value, tta: +$('#tta').value }),
-}));
+$('#run').onclick = () => launch(p => E.runPoint({
+  lat: +$('#lat').value, lon: +$('#lon').value, start: $('#d0').value, end: $('#d1').value,
+  size: +$('#size').value, tta: +$('#tta').value,
+}, p, m => console.log('[engine]', m)));
 $('#file').onchange = () => {
   const f = $('#file').files[0]; if (!f) return;
-  const fd = new FormData(); fd.append('file', f);
-  submit(fetch(API + '/api/upload?tta=' + $('#tta').value, { method: 'POST', body: fd }));
+  launch(p => E.runUpload(f, +$('#tta').value, p));
 };
 </script>
 </body>
