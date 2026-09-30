@@ -53,8 +53,11 @@ AOIS = [
 
 
 # ---------------------------------------------------------------- data access
-def fetch_s2(aoi):
-    """Return (X[10,H,W] reflectance, meta) for the clearest scene in the window."""
+def fetch_s2(aoi, edge=EDGE, min_clear=0.97, log=print):
+    """Return (X[10,H,W] reflectance, meta) for the clearest scene in the window.
+
+    Falls back to the clearest window found if none reaches `min_clear`."""
+    EDGE = edge
     cat = pystac_client.Client.open(
         "https://planetarycomputer.microsoft.com/api/stac/v1", modifier=pc.sign_inplace)
     items = list(cat.search(
@@ -63,7 +66,9 @@ def fetch_s2(aoi):
         datetime=aoi["dates"], query={"eo:cloud_cover": {"lt": 20}}).items())
     items.sort(key=lambda it: it.properties["eo:cloud_cover"])
     if not items:
-        raise RuntimeError(f"no scenes for {aoi['id']}")
+        raise RuntimeError("No Sentinel-2 scene with <20% cloud found for this location and date range. "
+                           "Try a wider date range or a dry-season window.")
+    best = None
 
     for item in items[:8]:
         with rasterio.open(item.assets["B04"].href) as ref:
@@ -78,27 +83,36 @@ def fetch_s2(aoi):
             scl = src.read(1, window=Window(win.col_off / 2, win.row_off / 2, EDGE / 2, EDGE / 2),
                            out_shape=(EDGE, EDGE), resampling=Resampling.nearest)
         clear = np.isin(scl, [4, 5, 6, 7, 11]).mean()   # veg, bare, water, unclassified, snow
-        if clear < 0.97:
-            print(f"  skip {item.id}: clear={clear:.2f}")
+        if clear < min_clear:
+            log(f"skip {item.id[:38]}: clear={clear:.2f}")
+            if best is None or clear > best[1]:
+                best = (item, clear, win, transform, crs)
             continue
+        return _read_window(item, clear, win, transform, crs, EDGE)
+    if best and best[1] >= 0.6:
+        log(f"using clearest available window (clear={best[1]:.2f})")
+        return _read_window(*best, EDGE)
+    raise RuntimeError("No sufficiently cloud-free window found (clouds or no-data). "
+                       "Try another date range.")
 
-        stack = []
-        for b in BANDS:
-            with rasterio.open(item.assets[b].href) as src:
-                f = src.res[0] / 10.0                      # 1 for 10 m bands, 2 for 20 m
-                w = Window(win.col_off / f, win.row_off / f, EDGE / f, EDGE / f)
-                stack.append(src.read(1, window=w, out_shape=(EDGE, EDGE),
-                                      resampling=Resampling.bilinear).astype("float32"))
-        X = np.stack(stack)
-        # harmonise processing baseline >= 04.00 (+1000 DN offset since Jan 2022)
-        if float(item.properties.get("s2:processing_baseline", "0")) >= 4.0:
-            X = np.clip(X - 1000, 0, None)
-        X /= 10_000
-        meta = dict(scene=item.id, date=item.datetime.strftime("%Y-%m-%d"),
-                    cloud=item.properties["eo:cloud_cover"], clear=float(clear),
-                    crs=str(crs), transform=transform)
-        return X, meta
-    raise RuntimeError(f"no clear window for {aoi['id']}")
+
+def _read_window(item, clear, win, transform, crs, edge):
+    stack = []
+    for b in BANDS:
+        with rasterio.open(item.assets[b].href) as src:
+            f = src.res[0] / 10.0                      # 1 for 10 m bands, 2 for 20 m
+            w = Window(win.col_off / f, win.row_off / f, edge / f, edge / f)
+            stack.append(src.read(1, window=w, out_shape=(edge, edge), boundless=True, fill_value=0,
+                                  resampling=Resampling.bilinear).astype("float32"))
+    X = np.stack(stack)
+    # harmonise processing baseline >= 04.00 (+1000 DN offset since Jan 2022)
+    if float(item.properties.get("s2:processing_baseline", "0")) >= 4.0:
+        X = np.clip(X - 1000, 0, None)
+    X /= 10_000
+    meta = dict(scene=item.id, date=item.datetime.strftime("%Y-%m-%d"),
+                cloud=item.properties["eo:cloud_cover"], clear=float(clear),
+                crs=str(crs), transform=transform)
+    return X, meta
 
 
 # ---------------------------------------------------------------- model
@@ -120,20 +134,59 @@ def undihedral(x, k, flip):
     return torch.rot90(x, -k, dims=(-2, -1))
 
 
+TILE, OVERLAP = 128, 32
+
+
+def _starts(n):
+    if n <= TILE:
+        return [0]
+    s = list(range(0, n - TILE, TILE - OVERLAP))
+    return s + [n - TILE]
+
+
 @torch.no_grad()
-def super_resolve(model, X, device):
-    """Return (mean SR, per-pixel std) from 8 dihedral TTA passes."""
+def predict_tiled(model, x):
+    """Run the 128 px model over a (C,H,W) image of any size >= 64, feather-blending overlaps."""
+    c, h, w = x.shape
+    ph, pw = max(0, TILE - h), max(0, TILE - w)
+    if ph or pw:  # small inputs: reflect-pad up to one tile
+        x = F.pad(x[None], (0, pw, 0, ph), mode="reflect")[0]
+    H, W = x.shape[-2:]
+    ramp = torch.ones(TILE * SCALE)
+    fr = OVERLAP * SCALE
+    ramp[:fr] = torch.linspace(0.05, 1, fr)
+    ramp[-fr:] = torch.linspace(1, 0.05, fr)
+    wt = ramp[:, None] * ramp[None, :]
+    out = torch.zeros(c, H * SCALE, W * SCALE)
+    acc = torch.zeros(1, H * SCALE, W * SCALE)
+    for r in _starts(H):
+        for q in _starts(W):
+            y = model(x[None, :, r:r + TILE, q:q + TILE]).squeeze(0).float().cpu()
+            sl = (slice(None), slice(r * SCALE, (r + TILE) * SCALE), slice(q * SCALE, (q + TILE) * SCALE))
+            out[sl] += y * wt
+            acc[sl] += wt
+    return (out / acc)[:, :h * SCALE, :w * SCALE]
+
+
+@torch.no_grad()
+def super_resolve(model, X, device, n_tta=8, progress=None):
+    """Return (mean SR, per-pixel std) from `n_tta` dihedral TTA passes (1-8)."""
     x = torch.from_numpy(X).to(device)
     x = torch.nan_to_num(x)
     outs = []
-    for k in range(4):
-        for flip in (False, True):
-            y = sen2sr.predict_large(model=model, X=dihedral(x, k, flip), overlap=32)
-            outs.append(undihedral(y, k, flip).float().cpu())
-            if device.type == "cuda":
-                torch.cuda.empty_cache()
+    # ordered so that any prefix mixes rotations and flips
+    order = [(0, False), (2, True), (1, False), (3, True), (2, False), (0, True), (3, False), (1, True)]
+    passes = order[:max(1, min(8, n_tta))]
+    for i, (k, flip) in enumerate(passes):
+        y = predict_tiled(model, dihedral(x, k, flip))
+        outs.append(undihedral(y, k, flip).float().cpu())
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+        if progress:
+            progress(i + 1, len(passes))
     stack = torch.stack(outs)
-    return stack.mean(0).numpy(), stack.std(0).numpy()
+    std = stack.std(0, correction=0)
+    return stack.mean(0).numpy(), std.numpy()
 
 
 # ---------------------------------------------------------------- metrics
@@ -223,31 +276,38 @@ def write_geotiff(arr, meta, path, scale):
 
 
 # ---------------------------------------------------------------- main
+def render(X, meta, sr, std, d, geotiff_dir=None, name="scene"):
+    """Write viewer assets (and optionally GeoTIFFs) for one scene; return metrics."""
+    edge = X.shape[-1]
+    bic = F.interpolate(torch.from_numpy(X)[None], scale_factor=SCALE, mode="bicubic",
+                        align_corners=False).squeeze(0).numpy()
+    m = compute_metrics(X, sr, bic, std)
+
+    d.mkdir(parents=True, exist_ok=True)
+    lo, hi = np.percentile(X[[2, 1, 0]], 1), np.percentile(X[[2, 1, 0]], 99)
+    hi = max(hi, lo + 1e-3)
+    save_jpg(to_rgb8(X, lo, hi), d / "input.jpg", edge * SCALE, nearest=True)
+    save_jpg(to_rgb8(bic, lo, hi), d / "bicubic.jpg")
+    save_jpg(to_rgb8(sr, lo, hi), d / "sr.jpg")
+    save_cmap(std[[2, 1, 0]].mean(0), d / "uncertainty", 0, UNC_MAX, "inferno", alpha=True)
+    save_cmap(np.kron(ndvi(X), np.ones((SCALE, SCALE))), d / "ndvi_input", -0.1, 0.8, "RdYlGn")
+    save_cmap(ndvi(sr), d / "ndvi_sr", -0.1, 0.8, "RdYlGn")
+
+    if geotiff_dir is not None:
+        geotiff_dir.mkdir(parents=True, exist_ok=True)
+        write_geotiff(sr, meta, geotiff_dir / f"{name}_sr_2p5m.tif", SCALE)
+        write_geotiff(std, meta, geotiff_dir / f"{name}_uncertainty_2p5m.tif", SCALE)
+        write_geotiff(X, meta, geotiff_dir / f"{name}_input_10m.tif", 1)
+    return m
+
+
 def process(aoi, model, device):
     print(f"[{aoi['id']}] fetching Sentinel-2 ...")
     X, meta = fetch_s2(aoi)
     print(f"[{aoi['id']}] {meta['scene']} ({meta['date']}), super-resolving ...")
     sr, std = super_resolve(model, X, device)
-    bic = F.interpolate(torch.from_numpy(X)[None], scale_factor=SCALE, mode="bicubic",
-                        align_corners=False).squeeze(0).numpy()
-    m = compute_metrics(X, sr, bic, std)
-
     d = SITE / "data" / aoi["id"]
-    d.mkdir(parents=True, exist_ok=True)
-    lo, hi = np.percentile(X[[2, 1, 0]], 1), np.percentile(X[[2, 1, 0]], 99)
-    size = EDGE * SCALE
-    save_jpg(to_rgb8(X, lo, hi), d / "input.jpg", size, nearest=True)
-    save_jpg(to_rgb8(bic, lo, hi), d / "bicubic.jpg")
-    save_jpg(to_rgb8(sr, lo, hi), d / "sr.jpg")
-    save_cmap(std[[2, 1, 0]].mean(0), d / "uncertainty", 0, UNC_MAX, "inferno", alpha=True)
-    ndvi_in = np.kron(ndvi(X), np.ones((SCALE, SCALE)))
-    save_cmap(ndvi_in, d / "ndvi_input", -0.1, 0.8, "RdYlGn")
-    save_cmap(ndvi(sr), d / "ndvi_sr", -0.1, 0.8, "RdYlGn")
-
-    OUT.mkdir(exist_ok=True)
-    write_geotiff(sr, meta, OUT / f"{aoi['id']}_sr_2p5m.tif", SCALE)
-    write_geotiff(std, meta, OUT / f"{aoi['id']}_uncertainty_2p5m.tif", SCALE)
-    write_geotiff(X, meta, OUT / f"{aoi['id']}_input_10m.tif", 1)
+    m = render(X, meta, sr, std, d, OUT, aoi["id"])
 
     info = {k: v for k, v in aoi.items()}
     info.update(scene=meta["scene"], date=meta["date"], cloud=round(meta["cloud"], 2),

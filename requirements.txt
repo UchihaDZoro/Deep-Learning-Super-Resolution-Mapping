@@ -1,0 +1,12 @@
+sen2sr
+mlstac
+safetensors
+planetary-computer
+pystac-client
+rasterio
+matplotlib
+pillow
+numpy
+fastapi
+uvicorn[standard]
+python-multipart

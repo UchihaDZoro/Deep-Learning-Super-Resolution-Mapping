@@ -7,6 +7,12 @@
 <meta name="description" content="Prototype v1: Sentinel-2 10 m to 2.5 m super-resolution with per-pixel uncertainty and radiometric consistency checks. SIH PS 26142 (NTRO).">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
+<script src="engine.js"></script>
 <style>
 :root{
   --bg:#0b0f17; --panel:#121826; --panel2:#182033; --line:#243049;
@@ -92,6 +98,33 @@ input[type=range]{accent-color:var(--accent)}
 .pill.next{background:#ff993322;color:var(--accent)}
 footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px solid var(--line)}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;background:#000a}
+/* live engine */
+.live{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:0;overflow:hidden;margin-top:22px}
+@media (max-width:980px){.live{grid-template-columns:1fr}}
+#map{height:380px;background:#0e1422}
+@media (max-width:980px){#map{height:300px}}
+.livepanel{padding:16px;display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--line)}
+.livepanel h3{margin:0;font-size:16px}
+.livepanel .sub{color:var(--muted);font-size:12.5px;margin:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.fld input,.fld select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 8px;font:500 13px Inter;width:100%}
+.btn{background:var(--accent);color:#1a1005;border:0;border-radius:10px;padding:10px 14px;font:600 14px Inter;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--text);font-weight:500;font-size:13px}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:#666}
+.dot.on{background:var(--accent2);box-shadow:0 0 8px var(--accent2)}.dot.off{background:var(--warn)}
+.prog{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.prog div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
+.stage{font-size:12.5px;color:var(--muted);min-height:18px}
+.err{color:var(--warn);font-size:12.5px}
+.dl{display:flex;flex-direction:column;gap:6px}
+.dl a{display:flex;justify-content:space-between;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-decoration:none;font-size:13px;color:var(--text)}
+.dl a span{color:var(--muted);font-size:12px}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:3px 9px;font:500 11.5px Inter;cursor:pointer}
+.leaflet-container{font-family:Inter}
 </style>
 </head>
 <body>
@@ -111,6 +144,41 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
   <section class="hero">
     <h2>Sentinel-2 <span>10 m → 2.5 m</span>, with a trust map for every pixel.</h2>
     <p>Real Sentinel-2 L2A scenes over India, super-resolved 4× with a radiometry-preserving deep network. Every output comes with a per-pixel uncertainty map and a consistency check, so analysts can tell <b>observed</b> detail from <b>inferred</b> detail.</p>
+  </section>
+
+  <section class="card live" id="livecard">
+    <div id="map" aria-label="Map: click to choose a location"></div>
+    <div class="livepanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h3>Run it yourself</h3>
+        <span class="status"><span class="dot" id="engDot"></span><span id="engTxt">loading engine…</span></span>
+      </div>
+      <p class="sub">Click anywhere on the map. Your browser finds the clearest recent Sentinel-2 scene, runs the SR network locally (no server, nothing uploaded) and returns 2.5 m imagery, an uncertainty map, metrics and GeoTIFFs.</p>
+      <div class="presets" id="presets"></div>
+      <div class="row">
+        <label class="fld">Latitude<input id="lat" type="number" step="0.0001" value="17.3850"></label>
+        <label class="fld">Longitude<input id="lon" type="number" step="0.0001" value="78.4867"></label>
+      </div>
+      <div class="row">
+        <label class="fld">From<input id="d0" type="date"></label>
+        <label class="fld">To<input id="d1" type="date"></label>
+      </div>
+      <div class="row">
+        <label class="fld">Area
+          <select id="size"><option value="128" selected>1.28 km (~10 s)</option><option value="192">1.92 km (~30 s)</option><option value="256">2.56 km (~1 min)</option></select></label>
+        <label class="fld">Uncertainty passes
+          <select id="tta"><option value="2">2 (fastest)</option><option value="4" selected>4</option><option value="8">8 (best)</option></select></label>
+      </div>
+      <button class="btn" id="run">Super-resolve this location</button>
+      <div class="prog"><div id="bar"></div></div>
+      <div class="stage" id="stage">&nbsp;</div>
+      <div class="err" id="err"></div>
+      <details>
+        <summary style="font-size:12.5px;color:var(--muted);cursor:pointer">…or upload your own Sentinel-2 GeoTIFF</summary>
+        <p class="sub" style="margin:8px 0">10-band L2A stack at 10 m (B2,B3,B4,B5,B6,B7,B8,B8A,B11,B12), or a 12/13-band full stack. A 256×256 centre crop is processed.</p>
+        <input type="file" id="file" accept=".tif,.tiff" style="font-size:12px;color:var(--muted)">
+      </details>
+    </div>
   </section>
 
   <div class="grid">
@@ -147,6 +215,11 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
         <div class="sub" id="aoiUse"></div>
         <div class="kv" id="aoiMeta"></div>
       </div>
+      <div class="card" id="dlcard" style="display:none">
+        <h3>Download results</h3>
+        <div class="sub">GeoTIFF, same CRS as the Sentinel-2 input. Reflectance ×10000 (uint16).</div>
+        <div class="dl" id="dls"></div>
+      </div>
       <div class="card">
         <h3>Trust &amp; consistency metrics</h3>
         <div class="sub">Computed automatically for this scene. The SR output is degraded back to 10 m and compared with the real Sentinel-2 input.</div>
@@ -180,12 +253,14 @@ footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px so
 
   <footer>
     Prototype v1 for Smart India Hackathon · PS 26142 (NTRO): Deep Learning Based Super Resolution Mapping from Medium Resolution Satellite Imagery.<br>
-    Contains modified Copernicus Sentinel data (processed via Microsoft Planetary Computer). v1 inference engine: SEN2SR-Lite (ESA OpenSR, CC-BY) used as the baseline network. The trust layer, consistency checks and pipeline are our own work.
+    Contains modified Copernicus Sentinel data (presets via Microsoft Planetary Computer; live runs read Sentinel-2 COGs on AWS via Element 84 Earth Search). v1 inference engine: SEN2SR-Lite (ESA OpenSR, CC-BY) used as the baseline network. The trust layer, consistency checks and pipeline are our own work.
   </footer>
 </main>
 
 <script>
 const $ = s => document.querySelector(s);
+// Live engine: same origin when served by the engine itself, the hosted Space otherwise.
+const asset = (a, f) => a.urls ? a.urls[f] : `data/${a.id}/${f}`;
 const state = { aois: [], cur: null, mode: 'sr', pos: 50, z: 1, tx: 0, ty: 0 };
 const viewer = $('#viewer'), imgL = $('#imgL'), imgR = $('#imgR'), imgU = $('#imgU');
 
@@ -214,7 +289,7 @@ function render() {
 }
 
 function setImages() {
-  const d = `data/${state.cur.id}/`;
+  const a = state.cur;
   $('#loading').style.display = 'grid';
   const m = state.mode;
   const L = m === 'sr' ? 'input.jpg' : m === 'bic' ? 'bicubic.jpg' : 'ndvi_input.jpg';
@@ -224,7 +299,7 @@ function setImages() {
   $('#lblR').textContent = m === 'ndvi' ? 'NDVI · 2.5 m (TRINETRA-SR)' : 'TRINETRA-SR · 2.5 m';
   let n = 0; const done = () => { if (++n === 2) $('#loading').style.display = 'none'; };
   imgL.onload = imgR.onload = done; imgL.onerror = imgR.onerror = done;
-  imgL.src = d + L; imgR.src = d + R; imgU.src = d + 'uncertainty.png';
+  imgL.src = asset(a, L); imgR.src = asset(a, R); imgU.src = asset(a, 'uncertainty.png');
   updateLegend();
 }
 
@@ -245,9 +320,17 @@ function selectAoi(a) {
   $('#aoiMeta').innerHTML = [
     ['Acquired', a.date], ['Scene cloud', a.cloud + ' %'], ['Extent', `${a.extent_km} × ${a.extent_km} km`],
     ['Input / output', '10 m → 2.5 m'], ['Bands', '10 (VNIR + RE + SWIR)'], ['CRS', a.crs],
-    ['Centre', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`],
+    ...(a.lat !== undefined ? [['Centre', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`]] : []),
+    ...(a.backend ? [['Computed', `in your browser · ${a.backend} · ${a.runtime_s}s`]] : []),
   ].map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join('');
   $('#metrics').innerHTML = fmtMetrics(a.metrics);
+  const dl = a.downloads;
+  $('#dlcard').style.display = dl ? 'block' : 'none';
+  if (dl) {
+    const tag = a.scene ? a.scene.replace(/[^\w.-]+/g, '_').slice(0, 40) : 'trinetra';
+    $('#dls').innerHTML = [['sr', 'Super-resolved · 2.5 m', '10 bands', '_sr_2p5m'], ['uncertainty', 'Uncertainty σ · 2.5 m', '10 bands', '_uncertainty_2p5m'], ['input', 'Sentinel-2 input · 10 m', '10 bands', '_input_10m']]
+      .map(([k, n, s, suf]) => `<a href="${dl[k]}" download="${tag}${suf}.tif">${n}<span>${s} · .tif</span></a>`).join('');
+  }
   setImages(); render();
 }
 
@@ -304,6 +387,82 @@ fetch('data/index.json').then(r => r.json()).then(list => {
   $('#aois').onclick = e => { const b = e.target.closest('.aoi-btn'); if (b) selectAoi(list.find(a => a.id === b.dataset.id)); };
   if (list.length) selectAoi(list[0]);
 }).catch(() => { $('#loading').textContent = 'No data found. Run prototype/run_sr.py first.'; });
+
+function addResult(r) {
+  state.aois = state.aois.filter(a => a.id !== r.id).concat(r);
+  const b = document.createElement('button');
+  b.className = 'aoi-btn'; b.dataset.id = r.id; b.textContent = '★ ' + r.name;
+  $('#aois').appendChild(b);
+  $('#aois').onclick = e => { const x = e.target.closest('.aoi-btn'); if (x) selectAoi(state.aois.find(a => a.id === x.dataset.id)); };
+  selectAoi(r);
+  $('#viewer').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ---------------------------------------------------------------- live engine
+const iso = d => d.toISOString().slice(0, 10);
+const today = new Date();
+$('#d1').value = iso(today);
+$('#d0').value = iso(new Date(today - 365 * 864e5));
+
+const PRESETS = [
+  ['Hyderabad', 17.3850, 78.4867], ['Chennai port', 13.0950, 80.2950], ['Kolkata', 22.5726, 88.3639],
+  ['Varanasi ghats', 25.3100, 83.0100], ['Kutch salt pans', 23.2100, 70.1300], ['Dhanbad', 23.8143, 86.4412],
+];
+$('#presets').innerHTML = PRESETS.map(([n, la, lo]) => `<button data-la="${la}" data-lo="${lo}">${n}</button>`).join('');
+
+let map, marker, box;
+function footprint() {
+  const la = +$('#lat').value, lo = +$('#lon').value, half = +$('#size').value * 10 / 2;
+  const dLa = half / 111320, dLo = half / (111320 * Math.cos(la * Math.PI / 180));
+  return [[la - dLa, lo - dLo], [la + dLa, lo + dLo]];
+}
+function syncMap(pan) {
+  if (!map) return;
+  const ll = [+$('#lat').value, +$('#lon').value];
+  marker.setLatLng(ll); box.setBounds(footprint());
+  if (pan) map.setView(ll, Math.max(map.getZoom(), 13));
+}
+if (window.L) {
+  map = L.map('map', { zoomControl: true }).setView([+$('#lat').value, +$('#lon').value], 13);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, attribution: 'Basemap © Esri, Maxar, Earthstar Geographics (for navigation only)' }).addTo(map);
+  marker = L.marker([+$('#lat').value, +$('#lon').value]).addTo(map);
+  box = L.rectangle(footprint(), { color: '#ff9933', weight: 2, fillOpacity: 0.08 }).addTo(map);
+  map.on('click', e => { $('#lat').value = e.latlng.lat.toFixed(4); $('#lon').value = e.latlng.lng.toFixed(4); syncMap(false); });
+} else { $('#map').innerHTML = '<p class="hint" style="padding:16px">Map could not load. Enter coordinates on the right.</p>'; }
+['#lat', '#lon'].forEach(id => $(id).addEventListener('change', () => syncMap(true)));
+$('#size').addEventListener('change', () => syncMap(false));
+$('#presets').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('#lat').value = b.dataset.la; $('#lon').value = b.dataset.lo; syncMap(true); };
+
+// ---------------------------------------------------------------- in-browser engine
+const E = window.TrinetraEngine;
+function engineStatus(ok, txt) { $('#engDot').className = 'dot ' + (ok ? 'on' : 'off'); $('#engTxt').textContent = txt; }
+if (E && window.ort && window.GeoTIFF && window.proj4) engineStatus(true, 'in-browser engine ready');
+else engineStatus(false, 'engine libraries failed to load');
+
+function setBusy(b) { $('#run').disabled = b; $('#file').disabled = b; }
+function showProgress(p, stage) { $('#bar').style.width = Math.round(p * 100) + '%'; $('#stage').textContent = stage; }
+
+async function launch(job) {
+  $('#err').textContent = ''; setBusy(true); showProgress(0.01, 'Starting…');
+  try {
+    const r = await job(showProgress);
+    showProgress(1, `Done · model ran in ${r.runtime_s}s on ${r.backend} · scene ${r.date}`);
+    engineStatus(true, `in-browser engine ready · ${r.backend}`);
+    addResult(r);
+  } catch (e) {
+    console.error(e); showProgress(0, '');
+    $('#err').textContent = (e && e.message) || String(e);
+  } finally { setBusy(false); }
+}
+$('#run').onclick = () => launch(p => E.runPoint({
+  lat: +$('#lat').value, lon: +$('#lon').value, start: $('#d0').value, end: $('#d1').value,
+  size: +$('#size').value, tta: +$('#tta').value,
+}, p, m => console.log('[engine]', m)));
+$('#file').onchange = () => {
+  const f = $('#file').files[0]; if (!f) return;
+  launch(p => E.runUpload(f, +$('#tta').value, p));
+};
 </script>
 </body>
 </html>

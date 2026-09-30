@@ -1,0 +1,6 @@
+.venv
+.git
+.claude
+prototype/outputs
+prototype/model
+**/__pycache__
