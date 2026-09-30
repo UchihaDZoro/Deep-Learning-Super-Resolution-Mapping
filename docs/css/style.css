@@ -114,7 +114,7 @@ h2 em, h1 em { font-style: normal; color: var(--muted); }
 @keyframes cue { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
 .globe-hint { position: absolute; right: 4%; bottom: 90px; font: 500 12px var(--mono); color: var(--dim); display: flex; gap: 8px; align-items: center; }
 @media (max-width: 900px) {
-  .hero { align-items: flex-end; padding-top: 52vh; }
+  .hero { align-items: flex-end; padding-top: 47vh; }
   .chips { grid-template-columns: repeat(2, 1fr); }
   .globe-hint { display: none; }
 }

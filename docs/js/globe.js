@@ -331,7 +331,7 @@ function resize() {
   camera.aspect = W / H; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
-world.position.set(mobile ? 0 : 1.15, mobile ? 0.72 : 0, 0);
+world.position.set(mobile ? 0 : 1.15, mobile ? 0.78 : 0, 0);
 yaw = home = facingYaw(20, 79);
 addEventListener('scroll', () => { scrollP = scrollY / H; }, { passive: true });
 const smooth = (a, b, x) => { const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -349,13 +349,13 @@ function tick() {
 
   // globe placement: hero -> side -> far background
   const s = smooth(0, 1.1, scrollP), s2 = smooth(1.1, 3.5, scrollP);
-  const baseX = mobile ? 0 : 1.15, baseY = mobile ? 0.72 : 0;
+  const baseX = mobile ? 0 : 1.15, baseY = mobile ? 0.78 : 0;
   world.position.set(
     THREE.MathUtils.lerp(baseX, mobile ? 0 : 2.3, s) + s2 * 3.2,
     THREE.MathUtils.lerp(baseY, mobile ? 1.3 : 0.35, s) + s2 * 0.9,
     THREE.MathUtils.lerp(0, -2.6, s) - s2 * 2.5
   );
-  const sc = mobile ? 0.78 : 1; world.scale.setScalar(sc);
+  const sc = mobile ? 0.6 : 1; world.scale.setScalar(sc);
 
   // rotation: drag inertia, focus target, idle spin
   if (target) {
