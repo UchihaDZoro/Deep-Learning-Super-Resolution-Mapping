@@ -3,9 +3,15 @@
   "configurations": [
     {
       "name": "site",
-      "runtimeExecutable": "C:\\Users\\Uchiha_D_Zoro\\Desktop\\SIH 2026\\.venv\\Scripts\\python.exe",
+      "runtimeExecutable": "C:/Users/Uchiha_D_Zoro/Desktop/SIH 2026/.venv/Scripts/python.exe",
       "runtimeArgs": ["-m", "http.server", "8765", "--directory", "docs"],
       "port": 8765
+    },
+    {
+      "name": "engine",
+      "runtimeExecutable": "C:/Users/Uchiha_D_Zoro/Desktop/SIH 2026/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "server.app:app", "--port", "7860"],
+      "port": 7860
     }
   ]
 }
