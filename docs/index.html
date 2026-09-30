@@ -3,466 +3,300 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TRINETRA-SR · Trustworthy Sentinel-2 Super-Resolution</title>
-<meta name="description" content="Prototype v1: Sentinel-2 10 m to 2.5 m super-resolution with per-pixel uncertainty and radiometric consistency checks. SIH PS 26142 (NTRO).">
+<title>TRINETRA-SR · Sentinel-2 at 2.5 m</title>
+<meta name="description" content="Trustworthy deep-learning super-resolution for Sentinel-2: 10 m to 2.5 m with a per-pixel trust map, running entirely in your browser. SIH PS 26142 (NTRO).">
+<meta name="theme-color" content="#03050b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%235ee7ff'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5.5' fill='none' stroke='%23ffb454' stroke-width='2' transform='rotate(-25 16 16)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="space" aria-hidden="true"></canvas>
+<div class="vignette"></div>
+<div class="pin-layer" id="pins"></div>
+<div class="progress" id="progress"></div>
+
+<nav class="top glass" aria-label="Sections">
+  <a class="brand" href="#top" aria-label="TRINETRA-SR home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6.5" fill="#5ee7ff"/><circle cx="16" cy="16" r="2.4" fill="#03050b"/><ellipse cx="16" cy="16" rx="14" ry="5.5" fill="none" stroke="#ffb454" stroke-width="1.8" transform="rotate(-25 16 16)"/></svg>
+    TRINETRA
+  </a>
+  <div class="navlinks" id="navlinks">
+    <a href="#problem">Problem</a><a href="#method">Method</a><a href="#lab">Live Lab</a><a href="#results">Results</a><a href="#trust">Trust</a><a href="#roadmap">Roadmap</a>
+  </div>
+  <a class="btn primary sm" href="#lab">Try it live</a>
+</nav>
+
+<main id="top">
+  <!-- ============================================================ HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="copy">
+        <div class="eyebrow intro">Smart India Hackathon · PS 26142 · NTRO</div>
+        <h1 class="intro d1">Sentinel-2,<br>seen at <span class="res">2.5&nbsp;m.</span><br><em>With a trust map.</em></h1>
+        <p class="lede intro d2">TRINETRA-SR super-resolves free 10 m Sentinel-2 imagery by 4×, keeps every reflectance value physically consistent, and tells analysts which pixels are observed and which are inferred.</p>
+        <div class="ctas intro d3">
+          <a class="btn primary" href="#lab">Launch the Live Lab
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn ghost" href="#results">Explore results</a>
+        </div>
+        <div class="chips intro d4">
+          <div class="chip glass"><b>4×</b><span>linear resolution<br>10 m → 2.5 m</span></div>
+          <div class="chip glass"><b>10</b><span>spectral bands<br>incl. red-edge &amp; SWIR</span></div>
+          <div class="chip glass"><b id="chipPsnr">~51 dB</b><span>radiometric<br>consistency</span></div>
+          <div class="chip glass"><b>0</b><span>servers: runs in<br>your browser</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="globe-hint">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>
+      drag the globe · click a pin
+    </div>
+    <div class="scrollcue">SCROLL<i></i></div>
+  </section>
+
+  <!-- ============================================================ PROBLEM -->
+  <section id="problem">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow reveal">01 · The problem</div>
+        <h2 class="reveal d1">Ten metres hides <em>what decisions need.</em></h2>
+        <p class="lede reveal d2">Sentinel-2 revisits every five days, globally and for free. But at 10 m one pixel covers a small house, and the details analysts act on blur away.</p>
+        <div class="misses">
+          <div class="miss glass reveal d1"><div class="k">URBAN</div><h4>Small buildings</h4><p>Individual rooftops merge into a single texture.</p></div>
+          <div class="miss glass reveal d2"><div class="k">TRANSPORT</div><h4>Narrow roads</h4><p>Lanes under 10 m wide break up or vanish.</p></div>
+          <div class="miss glass reveal d3"><div class="k">AGRICULTURE</div><h4>Field boundaries</h4><p>Smallholder bunds in India are only a few metres wide.</p></div>
+          <div class="miss glass reveal d4"><div class="k">DISASTER</div><h4>Local damage</h4><p>Landslide edges, breached banks and flood lines.</p></div>
+        </div>
+      </div>
+      <div class="glass triptych reveal d2">
+        <div class="trip">
+          <figure><div class="crop px" style="background-image:url(data/bengaluru/input.jpg)"></div><figcaption><b>10 m</b> native</figcaption></figure>
+          <figure><div class="crop" style="background-image:url(data/bengaluru/bicubic.jpg)"></div><figcaption><b>Bicubic</b> 2.5 m</figcaption></figure>
+          <figure><div class="crop" style="background-image:url(data/bengaluru/sr.jpg)"></div><figcaption><b>TRINETRA</b> 2.5 m</figcaption></figure>
+        </div>
+        <p class="trip-note">M. Chinnaswamy Stadium, Bengaluru · Sentinel-2 L2A, 13 Mar 2024. Same scene, same colour stretch.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ METHOD -->
+  <section id="method">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow reveal">02 · Method</div>
+        <h2 class="reveal d1">From orbit to 2.5 m <em>in five steps.</em></h2>
+        <p class="lede reveal d2">One pipeline, written twice: in Python for batch production and in the browser for the live lab. Both produce identical numbers.</p>
+      </div>
+      <div class="steps">
+        <div class="step glass reveal"><div class="n">1</div><h4>Acquire</h4><p>STAC search for Sentinel-2 L2A over the point. Picks the clearest window using the scene-classification cloud mask.</p><span class="tag">Earth Search</span><span class="tag">SCL</span></div>
+        <div class="step glass reveal d1"><div class="n">2</div><h4>Prepare</h4><p>Reads only the needed window from cloud-optimised GeoTIFFs. Harmonises the baseline-04 offset and stacks 10 bands.</p><span class="tag">COG</span><span class="tag">BOA</span></div>
+        <div class="step glass reveal d2"><div class="n">3</div><h4>Super-resolve</h4><p>Lightweight SR network, tiled with feathered overlaps. A low-frequency hard constraint pins radiometry to the input.</p><span class="tag">ONNX</span><span class="tag">WASM</span></div>
+        <div class="step glass reveal d3"><div class="n">4</div><h4>Trust layer</h4><p>A dihedral ensemble gives a per-pixel σ. The output is degraded back to 10 m and 20 m and checked against the input.</p><span class="tag">TTA</span><span class="tag">PSNR·SAM</span></div>
+        <div class="step glass reveal d4"><div class="n">5</div><h4>Deliver</h4><p>2.5 m GeoTIFFs in the original UTM grid, plus an uncertainty band, metrics and an interactive comparison.</p><span class="tag">GeoTIFF</span><span class="tag">EPSG</span></div>
+      </div>
+      <div class="pillars">
+        <div class="pillar glass reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h4>Physics-consistent</h4><p>Degrade the 2.5 m output and you recover the observed 10 m input (&gt;49 dB). NDVI and other indices stay scientifically valid.</p></div>
+        <div class="pillar glass reveal d1"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h4>Honest about inference</h4><p>Every product ships with an uncertainty map, so reconstructed detail is never mistaken for observed detail.</p></div>
+        <div class="pillar glass reveal d2"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <h4>Deployable anywhere</h4><p>A 19 MB model with no server. It runs air-gapped on an analyst's laptop, and the same code runs as a batch job.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ LAB -->
+  <section id="lab">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow reveal">03 · Live Lab</div>
+        <h2 class="reveal d1">Pick any place on Earth. <em>Watch it sharpen.</em></h2>
+        <p class="lede reveal d2">Search a place or click the map. Your browser fetches the clearest recent Sentinel-2 scene and runs the network locally.</p>
+      </div>
+      <div class="lab glass strong reveal">
+        <div class="mapbox">
+          <div id="map" aria-label="Map: click to choose a location"></div>
+          <div class="search" id="search">
+            <div class="bar">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input id="q" type="search" placeholder="Search a city, landmark or district…" autocomplete="off" aria-label="Search location">
+              <button class="iconbtn" id="locate" title="Use my location" aria-label="Use my location">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
+            </div>
+            <div class="results" id="qres" role="listbox"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="place">
+            <div><h3 id="placeName">Hyderabad</h3><div class="coords" id="placeCoords">17.3850°N, 78.4867°E</div></div>
+            <span class="status"><span class="dot" id="engDot"></span><span id="engTxt">loading</span></span>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="d0">From</label><input class="input" id="d0" type="date"></div>
+            <div class="field"><label for="d1">To</label><input class="input" id="d1" type="date"></div>
+          </div>
+          <div>
+            <span class="flabel">Area</span>
+            <div class="seg" id="size">
+              <button data-v="128" class="on">1.28 km<small>~10 s</small></button>
+              <button data-v="192">1.92 km<small>~30 s</small></button>
+              <button data-v="256">2.56 km<small>~1 min</small></button>
+            </div>
+          </div>
+          <div>
+            <span class="flabel">Uncertainty passes</span>
+            <div class="seg" id="tta">
+              <button data-v="2">2<small>fastest</small></button>
+              <button data-v="4" class="on">4<small>balanced</small></button>
+              <button data-v="8">8<small>best σ</small></button>
+            </div>
+          </div>
+          <div class="runbox">
+            <button class="btn primary" id="run">Super-resolve this place</button>
+            <div class="prog"><div id="bar"></div></div>
+            <div class="stage" id="stage"></div>
+            <div class="err" id="err"></div>
+          </div>
+          <label class="drop" id="drop">
+            <input type="file" id="file" accept=".tif,.tiff" hidden>
+            <b>Drop a Sentinel-2 GeoTIFF</b> or click to browse<br>
+            <span style="font-size:12px">10-band L2A stack (B2–B12) or a 12/13-band full stack</span>
+          </label>
+          <div class="privacy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+            Runs 100% in your browser. Nothing you pick or upload leaves this device.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ RESULTS -->
+  <section id="results">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow reveal">04 · Results explorer</div>
+        <h2 class="reveal d1">Swipe between <em>what was seen and what we see.</em></h2>
+        <p class="lede reveal d2">Five Indian study areas, plus anything you run in the Live Lab. Drag the handle, scroll to zoom, and switch on the trust map.</p>
+      </div>
+      <div class="gallery reveal" id="gallery"></div>
+      <div class="viewer-grid reveal d1">
+        <div class="glass vcard">
+          <div class="toolbar">
+            <div class="seg" id="mode">
+              <button data-m="sr" class="on">vs 10 m</button>
+              <button data-m="bic">vs Bicubic</button>
+              <button data-m="ndvi">NDVI</button>
+            </div>
+            <label class="toggle"><input type="checkbox" id="unc"> Trust map</label>
+            <input type="range" id="uncop" min="0" max="100" value="80" aria-label="Trust map opacity" style="width:90px">
+          </div>
+          <div class="viewer" id="viewer">
+            <div class="layer" id="L"><img id="imgL" class="px" alt="Before"></div>
+            <div class="layer" id="R"><img id="imgR" alt="After"><img id="imgU" alt="Uncertainty" style="display:none"></div>
+            <div class="divider" id="div"><div class="handle" id="handle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div></div>
+            <div class="vlabel l" id="lblL">Sentinel-2 · 10 m</div>
+            <div class="vlabel r" id="lblR">TRINETRA · 2.5 m</div>
+            <div class="legend" id="legend"><div id="legT">Uncertainty σ</div><div class="bar" id="legBar"></div><div class="ticks"><span id="leg0">0</span><span id="leg1">≥0.02</span></div></div>
+            <div class="scalebar"><span id="sbl">500 m</span><div id="sbw" style="width:80px"></div></div>
+            <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Reset" style="font-size:13px">⤢</button></div>
+            <div class="loading" id="loading">loading…</div>
+          </div>
+          <div class="hint">Drag the handle to compare · scroll or +/− to zoom · drag to pan.</div>
+        </div>
+        <aside class="side">
+          <div class="glass">
+            <h3 id="aoiName">—</h3>
+            <div class="use" id="aoiUse"></div>
+            <div class="kv" id="aoiMeta"></div>
+          </div>
+          <div class="glass" id="dlcard" style="display:none">
+            <h3 style="font-size:16px">Downloads</h3>
+            <div class="use" style="margin-bottom:0">GeoTIFF in the input's UTM grid · reflectance ×10000</div>
+            <div class="dls" id="dls"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ TRUST -->
+  <section id="trust">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow reveal">05 · Trust &amp; validation</div>
+        <h2 class="reveal d1">Numbers you can <em>defend in a briefing.</em></h2>
+        <p class="lede reveal d2">Computed automatically for every scene. The 2.5 m output is degraded back to each band's native resolution and compared with what the satellite actually measured.</p>
+      </div>
+      <div class="trust-context reveal" id="trustCtx"></div>
+      <div class="metrics" id="metrics"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ ROADMAP -->
+  <section id="roadmap">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="eyebrow reveal">06 · Roadmap</div>
+        <h2 class="reveal d1">Prototype today. <em>Operational next.</em></h2>
+      </div>
+      <div class="road">
+        <div class="col glass reveal">
+          <h3>In this prototype <span class="pill live">LIVE</span></h3>
+          <ul id="liveList"></ul>
+        </div>
+        <div class="col glass reveal d1">
+          <h3>Next iteration <span class="pill next">V2</span></h3>
+          <ul id="nextList"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:12px">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6.5" fill="#5ee7ff"/><circle cx="16" cy="16" r="2.4" fill="#03050b"/><ellipse cx="16" cy="16" rx="14" ry="5.5" fill="none" stroke="#ffb454" stroke-width="1.8" transform="rotate(-25 16 16)"/></svg>
+          TRINETRA-SR</a>
+        <p>Deep-learning super-resolution mapping from medium-resolution satellite imagery. Smart India Hackathon, problem statement 26142, National Technical Research Organisation.</p>
+      </div>
+      <div>
+        <h4>Data &amp; models</h4>
+        <ul>
+          <li>Contains modified Copernicus Sentinel data</li>
+          <li>Live scenes: Sentinel-2 COGs on AWS via Element 84 Earth Search</li>
+          <li>Presets: Microsoft Planetary Computer</li>
+          <li>Baseline network: SEN2SR-Lite (ESA OpenSR)</li>
+          <li>Earth textures: NASA Blue Marble via three.js</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <ul>
+          <li><a href="https://github.com/UchihaDZoro/Deep-Learning-Super-Resolution-Mapping">Source code on GitHub</a></li>
+          <li><a href="#lab">Live Lab</a></li>
+          <li><a href="#trust">Validation metrics</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="fine">Super-resolution reconstructs plausible detail. It does not replace very-high-resolution acquisition, which is why every output carries a trust map.</div>
+  </div>
+</footer>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js"></script>
 <script src="engine.js"></script>
-<style>
-:root{
-  --bg:#0b0f17; --panel:#121826; --panel2:#182033; --line:#243049;
-  --text:#e6ebf5; --muted:#8e9ab3; --accent:#ff9933; --accent2:#3ec7a6; --warn:#ff5d5d;
-  --radius:14px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;line-height:1.5}
-a{color:var(--accent2)}
-.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
-header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101727,#0b0f17)}
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px}
-.logo{width:38px;height:38px;border-radius:10px;background:conic-gradient(from 200deg,var(--accent),#fff 30%,var(--accent2) 60%,var(--accent));display:grid;place-items:center}
-.logo::after{content:"";width:14px;height:14px;border-radius:50%;background:var(--bg);box-shadow:0 0 0 3px #0b0f17aa}
-.brand h1{font-size:18px;margin:0;letter-spacing:.3px}
-.brand small{display:block;color:var(--muted);font-size:12px}
-.tags{display:flex;gap:8px;flex-wrap:wrap}
-.tag{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:99px;color:var(--muted)}
-.hero{padding:28px 0 8px}
-.hero h2{font-size:clamp(22px,3.2vw,34px);margin:0 0 8px;line-height:1.2}
-.hero h2 span{color:var(--accent)}
-.hero p{color:var(--muted);max-width:820px;margin:0}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;padding:22px 0}
-@media (max-width:980px){.grid{grid-template-columns:1fr}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
-.aois{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.aoi-btn{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;font:500 13px Inter}
-.aoi-btn.on{border-color:var(--accent);background:#2a1d10}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
-.seg{display:flex;background:var(--panel2);border-radius:10px;padding:3px;border:1px solid var(--line)}
-.seg button{background:none;border:0;color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer;font:500 12.5px Inter}
-.seg button.on{background:var(--accent);color:#1a1005}
-label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
-input[type=range]{accent-color:var(--accent)}
-.viewer{position:relative;aspect-ratio:1/1;overflow:hidden;background:#000;border-radius:0 0 var(--radius) var(--radius);cursor:grab;touch-action:none;user-select:none}
-.viewer.dragging{cursor:grabbing}
-.layer{position:absolute;inset:0;overflow:hidden}
-.layer img{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:0 0;image-rendering:auto;pointer-events:none}
-.layer img.px{image-rendering:pixelated}
-.divider{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #000;transform:translateX(-1px)}
-.handle{position:absolute;top:50%;left:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-weight:700;cursor:ew-resize;box-shadow:0 2px 10px #0008}
-.lbl{position:absolute;top:10px;padding:4px 10px;border-radius:8px;background:#000b;font-size:12px;font-weight:600;pointer-events:none}
-.lbl.l{left:10px}.lbl.r{right:10px;color:var(--accent)}
-.zoomctl{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px}
-.zoomctl button{width:34px;height:34px;border-radius:9px;border:1px solid #fff3;background:#000b;color:#fff;font-size:18px;cursor:pointer}
-.scalebar{position:absolute;left:10px;bottom:12px;font:500 11px 'JetBrains Mono';color:#fff;text-shadow:0 1px 2px #000}
-.scalebar div{height:5px;border:2px solid #fff;border-top:0;margin-top:2px}
-.legend{position:absolute;left:10px;bottom:44px;background:#000b;padding:6px 8px;border-radius:8px;font-size:11px;display:none}
-.legend .bar{width:140px;height:8px;border-radius:4px;background:linear-gradient(90deg,#000004,#57106e,#bc3754,#f98e09,#fcffa4)}
-.legend .ndvi{background:linear-gradient(90deg,#a50026,#f46d43,#fee08b,#d9ef8b,#66bd63,#006837)}
-.legend .ticks{display:flex;justify-content:space-between;color:var(--muted)}
-.hint{font-size:12px;color:var(--muted);padding:8px 12px}
-.side{display:flex;flex-direction:column;gap:16px}
-.side .card{padding:16px}
-.side h3{margin:0 0 4px;font-size:15px}
-.side .sub{color:var(--muted);font-size:12.5px;margin-bottom:12px}
-.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
-.kv span:nth-child(odd){color:var(--muted)}
-.kv b{font-family:'JetBrains Mono';font-weight:500}
-.metric{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px dashed var(--line)}
-.metric:first-of-type{border-top:0}
-.metric .n{font-size:13px}
-.metric .n small{display:block;color:var(--muted);font-size:11.5px}
-.metric .v{font:600 16px 'JetBrains Mono'}
-.ok{color:var(--accent2)} .mid{color:var(--accent)}
-.section{padding:28px 0;border-top:1px solid var(--line)}
-.section h2{font-size:22px;margin:0 0 14px}
-.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-@media (max-width:900px){.pipe{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.pipe{grid-template-columns:1fr}}
-.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative}
-.step .no{font:600 11px 'JetBrains Mono';color:var(--accent)}
-.step h4{margin:4px 0 6px;font-size:14px}
-.step p{margin:0;color:var(--muted);font-size:12.5px}
-.step.v2{border-style:dashed;opacity:.85}
-.usp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media (max-width:900px){.usp{grid-template-columns:1fr}}
-.usp div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
-.usp h4{margin:0 0 6px;font-size:14px}
-.usp p{margin:0;color:var(--muted);font-size:13px}
-.pill{font:600 10px Inter;letter-spacing:.5px;padding:2px 7px;border-radius:99px;background:#3ec7a622;color:var(--accent2);margin-left:6px;vertical-align:middle}
-.pill.next{background:#ff993322;color:var(--accent)}
-footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px solid var(--line)}
-.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;background:#000a}
-/* live engine */
-.live{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:0;overflow:hidden;margin-top:22px}
-@media (max-width:980px){.live{grid-template-columns:1fr}}
-#map{height:380px;background:#0e1422}
-@media (max-width:980px){#map{height:300px}}
-.livepanel{padding:16px;display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--line)}
-.livepanel h3{margin:0;font-size:16px}
-.livepanel .sub{color:var(--muted);font-size:12.5px;margin:0}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
-.fld input,.fld select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 8px;font:500 13px Inter;width:100%}
-.btn{background:var(--accent);color:#1a1005;border:0;border-radius:10px;padding:10px 14px;font:600 14px Inter;cursor:pointer}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn.ghost{background:none;border:1px solid var(--line);color:var(--text);font-weight:500;font-size:13px}
-.status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-.dot{width:8px;height:8px;border-radius:50%;background:#666}
-.dot.on{background:var(--accent2);box-shadow:0 0 8px var(--accent2)}.dot.off{background:var(--warn)}
-.prog{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
-.prog div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
-.stage{font-size:12.5px;color:var(--muted);min-height:18px}
-.err{color:var(--warn);font-size:12.5px}
-.dl{display:flex;flex-direction:column;gap:6px}
-.dl a{display:flex;justify-content:space-between;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-decoration:none;font-size:13px;color:var(--text)}
-.dl a span{color:var(--muted);font-size:12px}
-.presets{display:flex;gap:6px;flex-wrap:wrap}
-.presets button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:3px 9px;font:500 11.5px Inter;cursor:pointer}
-.leaflet-container{font-family:Inter}
-</style>
-</head>
-<body>
-<header>
-  <div class="wrap top">
-    <div class="brand">
-      <div class="logo" aria-hidden="true"></div>
-      <div><h1>TRINETRA-SR</h1><small>Trustworthy Super-Resolution for Sentinel-2</small></div>
-    </div>
-    <div class="tags">
-      <span class="tag">SIH · PS 26142</span><span class="tag">NTRO</span><span class="tag">Space Technology</span><span class="tag">Prototype v1</span>
-    </div>
-  </div>
-</header>
-
-<main class="wrap">
-  <section class="hero">
-    <h2>Sentinel-2 <span>10 m → 2.5 m</span>, with a trust map for every pixel.</h2>
-    <p>Real Sentinel-2 L2A scenes over India, super-resolved 4× with a radiometry-preserving deep network. Every output comes with a per-pixel uncertainty map and a consistency check, so analysts can tell <b>observed</b> detail from <b>inferred</b> detail.</p>
-  </section>
-
-  <section class="card live" id="livecard">
-    <div id="map" aria-label="Map: click to choose a location"></div>
-    <div class="livepanel">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <h3>Run it yourself</h3>
-        <span class="status"><span class="dot" id="engDot"></span><span id="engTxt">loading engine…</span></span>
-      </div>
-      <p class="sub">Click anywhere on the map. Your browser finds the clearest recent Sentinel-2 scene, runs the SR network locally (no server, nothing uploaded) and returns 2.5 m imagery, an uncertainty map, metrics and GeoTIFFs.</p>
-      <div class="presets" id="presets"></div>
-      <div class="row">
-        <label class="fld">Latitude<input id="lat" type="number" step="0.0001" value="17.3850"></label>
-        <label class="fld">Longitude<input id="lon" type="number" step="0.0001" value="78.4867"></label>
-      </div>
-      <div class="row">
-        <label class="fld">From<input id="d0" type="date"></label>
-        <label class="fld">To<input id="d1" type="date"></label>
-      </div>
-      <div class="row">
-        <label class="fld">Area
-          <select id="size"><option value="128" selected>1.28 km (~10 s)</option><option value="192">1.92 km (~30 s)</option><option value="256">2.56 km (~1 min)</option></select></label>
-        <label class="fld">Uncertainty passes
-          <select id="tta"><option value="2">2 (fastest)</option><option value="4" selected>4</option><option value="8">8 (best)</option></select></label>
-      </div>
-      <button class="btn" id="run">Super-resolve this location</button>
-      <div class="prog"><div id="bar"></div></div>
-      <div class="stage" id="stage">&nbsp;</div>
-      <div class="err" id="err"></div>
-      <details>
-        <summary style="font-size:12.5px;color:var(--muted);cursor:pointer">…or upload your own Sentinel-2 GeoTIFF</summary>
-        <p class="sub" style="margin:8px 0">10-band L2A stack at 10 m (B2,B3,B4,B5,B6,B7,B8,B8A,B11,B12), or a 12/13-band full stack. A 256×256 centre crop is processed.</p>
-        <input type="file" id="file" accept=".tif,.tiff" style="font-size:12px;color:var(--muted)">
-      </details>
-    </div>
-  </section>
-
-  <div class="grid">
-    <div>
-      <div class="aois" id="aois"></div>
-      <div class="card">
-        <div class="toolbar">
-          <div class="seg" id="mode">
-            <button data-m="sr" class="on">vs Sentinel-2 10 m</button>
-            <button data-m="bic">vs Bicubic</button>
-            <button data-m="ndvi">NDVI 10 m vs 2.5 m</button>
-          </div>
-          <label class="chk"><input type="checkbox" id="unc"> Uncertainty overlay</label>
-          <input type="range" id="uncop" min="0" max="100" value="80" title="Overlay opacity" style="width:90px">
-        </div>
-        <div class="viewer" id="viewer">
-          <div class="layer" id="L"><img id="imgL" class="px" alt="Left image"></div>
-          <div class="layer" id="R"><img id="imgR" alt="Right image"><img id="imgU" alt="Uncertainty" style="display:none"></div>
-          <div class="divider" id="div"><div class="handle" id="handle">⇆</div></div>
-          <div class="lbl l" id="lblL">Sentinel-2 · 10 m</div>
-          <div class="lbl r" id="lblR">TRINETRA-SR · 2.5 m</div>
-          <div class="legend" id="legend"><div id="legT" style="margin-bottom:3px">Uncertainty (σ reflectance)</div><div class="bar" id="legBar"></div><div class="ticks"><span id="leg0">0</span><span id="leg1">≥0.02</span></div></div>
-          <div class="scalebar" id="scalebar"><span id="sbl">500 m</span><div id="sbw" style="width:80px"></div></div>
-          <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Reset" style="font-size:13px">⤢</button></div>
-          <div class="loading" id="loading">Loading…</div>
-        </div>
-      </div>
-      <div class="hint">Drag the white handle to compare · scroll or use +/− to zoom · drag the image to pan. Zoom in on roads, rooftops and field bunds to see the difference.</div>
-    </div>
-
-    <aside class="side">
-      <div class="card">
-        <h3 id="aoiName">—</h3>
-        <div class="sub" id="aoiUse"></div>
-        <div class="kv" id="aoiMeta"></div>
-      </div>
-      <div class="card" id="dlcard" style="display:none">
-        <h3>Download results</h3>
-        <div class="sub">GeoTIFF, same CRS as the Sentinel-2 input. Reflectance ×10000 (uint16).</div>
-        <div class="dl" id="dls"></div>
-      </div>
-      <div class="card">
-        <h3>Trust &amp; consistency metrics</h3>
-        <div class="sub">Computed automatically for this scene. The SR output is degraded back to 10 m and compared with the real Sentinel-2 input.</div>
-        <div id="metrics"></div>
-      </div>
-    </aside>
-  </div>
-
-  <section class="section">
-    <h2>Pipeline</h2>
-    <div class="pipe">
-      <div class="step"><div class="no">01</div><h4>Acquire</h4><p>STAC search for Sentinel-2 L2A over the AOI. Clearest scene picked with the SCL cloud mask. Baseline-04 harmonisation.</p></div>
-      <div class="step"><div class="no">02</div><h4>Pre-process</h4><p>10 bands (10 m + 20 m) stacked on the 10 m grid and scaled to reflectance. Tiled with overlap.</p></div>
-      <div class="step"><div class="no">03</div><h4>Super-resolve</h4><p>Lightweight network with a low-frequency hard constraint → 2.5 m output with radiometry preserved.</p></div>
-      <div class="step"><div class="no">04</div><h4>Trust layer</h4><p>8-fold dihedral ensemble → per-pixel σ. Consistency, spectral-angle and NDVI checks.</p></div>
-      <div class="step"><div class="no">05</div><h4>Deliver</h4><p>2.5 m GeoTIFF (same CRS) + uncertainty band + metrics → web viewer / GIS.</p></div>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>What makes it different</h2>
-    <div class="usp">
-      <div><h4>Per-pixel trust map <span class="pill">LIVE</span></h4><p>Every 2.5 m product ships with an uncertainty band that flags where detail is inferred rather than observed. v2: conformal calibration with guaranteed coverage.</p></div>
-      <div><h4>Physics-consistent radiometry <span class="pill">LIVE</span></h4><p>Degrade the output back to 10 m and it matches the input. NDVI and other indices stay scientifically valid.</p></div>
-      <div><h4>All-band 2.5 m <span class="pill">LIVE</span></h4><p>Red-edge and SWIR are sharpened too, not just RGB. That gives NDVI, NDRE, NDWI and NBR at 2.5 m for crops, water and burn scars.</p></div>
-      <div><h4>Multi-temporal fusion <span class="pill next">v2</span></h4><p>Fuse several 5-day revisits so extra detail is partly observed (sub-pixel shifts), not only imagined.</p></div>
-      <div><h4>Fidelity ↔ Detail dial <span class="pill next">v2</span></h4><p>Deterministic fidelity mode for analysts, plus a diffusion refiner for detail. Blend them live and watch the uncertainty update.</p></div>
-      <div><h4>Task-level validation <span class="pill next">v2</span></h4><p>Buildings, roads, field boundaries and flood/landslide change detection on an India validation set, plus a phantom-object hallucination audit.</p></div>
-    </div>
-  </section>
-
-  <footer>
-    Prototype v1 for Smart India Hackathon · PS 26142 (NTRO): Deep Learning Based Super Resolution Mapping from Medium Resolution Satellite Imagery.<br>
-    Contains modified Copernicus Sentinel data (presets via Microsoft Planetary Computer; live runs read Sentinel-2 COGs on AWS via Element 84 Earth Search). v1 inference engine: SEN2SR-Lite (ESA OpenSR, CC-BY) used as the baseline network. The trust layer, consistency checks and pipeline are our own work.
-  </footer>
-</main>
-
-<script>
-const $ = s => document.querySelector(s);
-// Live engine: same origin when served by the engine itself, the hosted Space otherwise.
-const asset = (a, f) => a.urls ? a.urls[f] : `data/${a.id}/${f}`;
-const state = { aois: [], cur: null, mode: 'sr', pos: 50, z: 1, tx: 0, ty: 0 };
-const viewer = $('#viewer'), imgL = $('#imgL'), imgR = $('#imgR'), imgU = $('#imgU');
-
-const fmtMetrics = m => [
-  ['Consistency PSNR · 10 m bands', 'SR degraded to 10 m vs real input (B2 B3 B4 B8)', m.consistency_psnr_db + ' dB', m.consistency_psnr_db > 40 ? 'ok' : 'mid'],
-  ['Consistency PSNR · 20 m bands', 'SR degraded to 20 m vs real input (RE, SWIR)', m.consistency_psnr_20m_db + ' dB', m.consistency_psnr_20m_db > 35 ? 'ok' : 'mid'],
-  ['Spectral angle (SAM)', 'Spectral distortion, 10 m bands', m.spectral_angle_deg + '°', m.spectral_angle_deg < 1.5 ? 'ok' : 'mid'],
-  ['NDVI deviation', 'Mean |ΔNDVI| after degradation', m.ndvi_mae, m.ndvi_mae < 0.02 ? 'ok' : 'mid'],
-  ['Sharpness gain', 'Edge energy vs bicubic', m.sharpness_gain_vs_bicubic + '×', m.sharpness_gain_vs_bicubic > 1.1 ? 'ok' : 'mid'],
-  ['Mean uncertainty', 'Mean σ of RGB reflectance', m.mean_uncertainty, 'mid'],
-  ['High-uncertainty area', 'Pixels flagged σ > 0.01', m.high_uncertainty_pct + ' %', m.high_uncertainty_pct < 5 ? 'ok' : 'mid'],
-].map(([n, s, v, c]) => `<div class="metric"><div class="n">${n}<small>${s}</small></div><div class="v ${c}">${v}</div></div>`).join('');
-
-function render() {
-  const t = `translate(${state.tx}px,${state.ty}px) scale(${state.z})`;
-  [imgL, imgR, imgU].forEach(i => i.style.transform = t);
-  $('#R').style.clipPath = `inset(0 0 0 ${state.pos}%)`;
-  $('#div').style.left = state.pos + '%';
-  // scale bar: image is extent_km wide at z=1
-  if (state.cur) {
-    const pxPerM = viewer.clientWidth * state.z / (state.cur.extent_km * 1000);
-    const nice = [10, 20, 50, 100, 200, 500, 1000].find(m => m * pxPerM > 60) || 1000;
-    $('#sbw').style.width = (nice * pxPerM) + 'px';
-    $('#sbl').textContent = nice >= 1000 ? nice / 1000 + ' km' : nice + ' m';
-  }
-}
-
-function setImages() {
-  const a = state.cur;
-  $('#loading').style.display = 'grid';
-  const m = state.mode;
-  const L = m === 'sr' ? 'input.jpg' : m === 'bic' ? 'bicubic.jpg' : 'ndvi_input.jpg';
-  const R = m === 'ndvi' ? 'ndvi_sr.jpg' : 'sr.jpg';
-  imgL.className = (m === 'bic') ? '' : 'px';
-  $('#lblL').textContent = m === 'sr' ? 'Sentinel-2 · 10 m (native pixels)' : m === 'bic' ? 'Bicubic upsampling · 2.5 m' : 'NDVI · 10 m';
-  $('#lblR').textContent = m === 'ndvi' ? 'NDVI · 2.5 m (TRINETRA-SR)' : 'TRINETRA-SR · 2.5 m';
-  let n = 0; const done = () => { if (++n === 2) $('#loading').style.display = 'none'; };
-  imgL.onload = imgR.onload = done; imgL.onerror = imgR.onerror = done;
-  imgL.src = asset(a, L); imgR.src = asset(a, R); imgU.src = asset(a, 'uncertainty.png');
-  updateLegend();
-}
-
-function updateLegend() {
-  const u = $('#unc').checked, nd = state.mode === 'ndvi';
-  imgU.style.display = u ? 'block' : 'none';
-  imgU.style.opacity = $('#uncop').value / 100;
-  $('#legend').style.display = (u || nd) ? 'block' : 'none';
-  if (u) { $('#legT').textContent = 'Uncertainty (σ reflectance)'; $('#legBar').className = 'bar'; $('#leg0').textContent = '0'; $('#leg1').textContent = '≥0.02'; }
-  else if (nd) { $('#legT').textContent = 'NDVI'; $('#legBar').className = 'bar ndvi'; $('#leg0').textContent = '−0.1'; $('#leg1').textContent = '0.8'; }
-}
-
-function selectAoi(a) {
-  state.cur = a; state.z = 1; state.tx = state.ty = 0;
-  document.querySelectorAll('.aoi-btn').forEach(b => b.classList.toggle('on', b.dataset.id === a.id));
-  $('#aoiName').textContent = a.name;
-  $('#aoiUse').textContent = a.use;
-  $('#aoiMeta').innerHTML = [
-    ['Acquired', a.date], ['Scene cloud', a.cloud + ' %'], ['Extent', `${a.extent_km} × ${a.extent_km} km`],
-    ['Input / output', '10 m → 2.5 m'], ['Bands', '10 (VNIR + RE + SWIR)'], ['CRS', a.crs],
-    ...(a.lat !== undefined ? [['Centre', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`]] : []),
-    ...(a.backend ? [['Computed', `in your browser · ${a.backend} · ${a.runtime_s}s`]] : []),
-  ].map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join('');
-  $('#metrics').innerHTML = fmtMetrics(a.metrics);
-  const dl = a.downloads;
-  $('#dlcard').style.display = dl ? 'block' : 'none';
-  if (dl) {
-    const tag = a.scene ? a.scene.replace(/[^\w.-]+/g, '_').slice(0, 40) : 'trinetra';
-    $('#dls').innerHTML = [['sr', 'Super-resolved · 2.5 m', '10 bands', '_sr_2p5m'], ['uncertainty', 'Uncertainty σ · 2.5 m', '10 bands', '_uncertainty_2p5m'], ['input', 'Sentinel-2 input · 10 m', '10 bands', '_input_10m']]
-      .map(([k, n, s, suf]) => `<a href="${dl[k]}" download="${tag}${suf}.tif">${n}<span>${s} · .tif</span></a>`).join('');
-  }
-  setImages(); render();
-}
-
-// zoom / pan / divider
-function zoomAt(f, cx, cy) {
-  const nz = Math.min(12, Math.max(1, state.z * f));
-  state.tx = cx - (cx - state.tx) * nz / state.z;
-  state.ty = cy - (cy - state.ty) * nz / state.z;
-  state.z = nz; clamp(); render();
-}
-function clamp() {
-  const w = viewer.clientWidth, h = viewer.clientHeight;
-  state.tx = Math.min(0, Math.max(w - w * state.z, state.tx));
-  state.ty = Math.min(0, Math.max(h - h * state.z, state.ty));
-}
-viewer.addEventListener('wheel', e => {
-  e.preventDefault();
-  const r = viewer.getBoundingClientRect();
-  zoomAt(e.deltaY < 0 ? 1.25 : 0.8, e.clientX - r.left, e.clientY - r.top);
-}, { passive: false });
-let drag = null;
-viewer.addEventListener('pointerdown', e => {
-  drag = { kind: e.target.closest('#handle') ? 'div' : 'pan', x: e.clientX, y: e.clientY, tx: state.tx, ty: state.ty };
-  viewer.setPointerCapture(e.pointerId);
-  if (drag.kind === 'pan') viewer.classList.add('dragging');
-});
-viewer.addEventListener('pointermove', e => {
-  if (!drag) return;
-  const r = viewer.getBoundingClientRect();
-  if (drag.kind === 'div') state.pos = Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100));
-  else { state.tx = drag.tx + e.clientX - drag.x; state.ty = drag.ty + e.clientY - drag.y; clamp(); }
-  render();
-});
-const end = () => { drag = null; viewer.classList.remove('dragging'); };
-viewer.addEventListener('pointerup', end); viewer.addEventListener('pointercancel', end);
-const mid = () => [viewer.clientWidth / 2, viewer.clientHeight / 2];
-$('#zin').onclick = e => { e.stopPropagation(); zoomAt(1.6, ...mid()); };
-$('#zout').onclick = e => { e.stopPropagation(); zoomAt(1 / 1.6, ...mid()); };
-$('#zreset').onclick = e => { e.stopPropagation(); state.z = 1; state.tx = state.ty = 0; render(); };
-['zin', 'zout', 'zreset'].forEach(id => $('#' + id).addEventListener('pointerdown', e => e.stopPropagation()));
-window.addEventListener('resize', () => { clamp(); render(); });
-
-$('#mode').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  state.mode = b.dataset.m;
-  document.querySelectorAll('#mode button').forEach(x => x.classList.toggle('on', x === b));
-  setImages();
-};
-$('#unc').onchange = updateLegend; $('#uncop').oninput = updateLegend;
-
-fetch('data/index.json').then(r => r.json()).then(list => {
-  state.aois = list;
-  $('#aois').innerHTML = list.map(a => `<button class="aoi-btn" data-id="${a.id}">${a.name}</button>`).join('');
-  $('#aois').onclick = e => { const b = e.target.closest('.aoi-btn'); if (b) selectAoi(list.find(a => a.id === b.dataset.id)); };
-  if (list.length) selectAoi(list[0]);
-}).catch(() => { $('#loading').textContent = 'No data found. Run prototype/run_sr.py first.'; });
-
-function addResult(r) {
-  state.aois = state.aois.filter(a => a.id !== r.id).concat(r);
-  const b = document.createElement('button');
-  b.className = 'aoi-btn'; b.dataset.id = r.id; b.textContent = '★ ' + r.name;
-  $('#aois').appendChild(b);
-  $('#aois').onclick = e => { const x = e.target.closest('.aoi-btn'); if (x) selectAoi(state.aois.find(a => a.id === x.dataset.id)); };
-  selectAoi(r);
-  $('#viewer').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-// ---------------------------------------------------------------- live engine
-const iso = d => d.toISOString().slice(0, 10);
-const today = new Date();
-$('#d1').value = iso(today);
-$('#d0').value = iso(new Date(today - 365 * 864e5));
-
-const PRESETS = [
-  ['Hyderabad', 17.3850, 78.4867], ['Chennai port', 13.0950, 80.2950], ['Kolkata', 22.5726, 88.3639],
-  ['Varanasi ghats', 25.3100, 83.0100], ['Kutch salt pans', 23.2100, 70.1300], ['Dhanbad', 23.8143, 86.4412],
-];
-$('#presets').innerHTML = PRESETS.map(([n, la, lo]) => `<button data-la="${la}" data-lo="${lo}">${n}</button>`).join('');
-
-let map, marker, box;
-function footprint() {
-  const la = +$('#lat').value, lo = +$('#lon').value, half = +$('#size').value * 10 / 2;
-  const dLa = half / 111320, dLo = half / (111320 * Math.cos(la * Math.PI / 180));
-  return [[la - dLa, lo - dLo], [la + dLa, lo + dLo]];
-}
-function syncMap(pan) {
-  if (!map) return;
-  const ll = [+$('#lat').value, +$('#lon').value];
-  marker.setLatLng(ll); box.setBounds(footprint());
-  if (pan) map.setView(ll, Math.max(map.getZoom(), 13));
-}
-if (window.L) {
-  map = L.map('map', { zoomControl: true }).setView([+$('#lat').value, +$('#lon').value], 13);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 18, attribution: 'Basemap © Esri, Maxar, Earthstar Geographics (for navigation only)' }).addTo(map);
-  marker = L.marker([+$('#lat').value, +$('#lon').value]).addTo(map);
-  box = L.rectangle(footprint(), { color: '#ff9933', weight: 2, fillOpacity: 0.08 }).addTo(map);
-  map.on('click', e => { $('#lat').value = e.latlng.lat.toFixed(4); $('#lon').value = e.latlng.lng.toFixed(4); syncMap(false); });
-} else { $('#map').innerHTML = '<p class="hint" style="padding:16px">Map could not load. Enter coordinates on the right.</p>'; }
-['#lat', '#lon'].forEach(id => $(id).addEventListener('change', () => syncMap(true)));
-$('#size').addEventListener('change', () => syncMap(false));
-$('#presets').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('#lat').value = b.dataset.la; $('#lon').value = b.dataset.lo; syncMap(true); };
-
-// ---------------------------------------------------------------- in-browser engine
-const E = window.TrinetraEngine;
-function engineStatus(ok, txt) { $('#engDot').className = 'dot ' + (ok ? 'on' : 'off'); $('#engTxt').textContent = txt; }
-if (E && window.ort && window.GeoTIFF && window.proj4) engineStatus(true, 'in-browser engine ready');
-else engineStatus(false, 'engine libraries failed to load');
-
-function setBusy(b) { $('#run').disabled = b; $('#file').disabled = b; }
-function showProgress(p, stage) { $('#bar').style.width = Math.round(p * 100) + '%'; $('#stage').textContent = stage; }
-
-async function launch(job) {
-  $('#err').textContent = ''; setBusy(true); showProgress(0.01, 'Starting…');
-  try {
-    const r = await job(showProgress);
-    showProgress(1, `Done · model ran in ${r.runtime_s}s on ${r.backend} · scene ${r.date}`);
-    engineStatus(true, `in-browser engine ready · ${r.backend}`);
-    addResult(r);
-  } catch (e) {
-    console.error(e); showProgress(0, '');
-    $('#err').textContent = (e && e.message) || String(e);
-  } finally { setBusy(false); }
-}
-$('#run').onclick = () => launch(p => E.runPoint({
-  lat: +$('#lat').value, lon: +$('#lon').value, start: $('#d0').value, end: $('#d1').value,
-  size: +$('#size').value, tta: +$('#tta').value,
-}, p, m => console.log('[engine]', m)));
-$('#file').onchange = () => {
-  const f = $('#file').files[0]; if (!f) return;
-  launch(p => E.runUpload(f, +$('#tta').value, p));
-};
-</script>
+<script src="js/app.js"></script>
+<script type="module" src="js/globe.js"></script>
 </body>
 </html>
