@@ -35,9 +35,12 @@ body{background:#d9dde5;font-family:Inter,Arial,sans-serif;color:var(--ink)}
 .t{font:500 21px/1.42 Inter, Arial, sans-serif;color:var(--ink)}
 .s{font:500 18px/1.4 Inter, Arial, sans-serif;color:var(--muted)}
 .b{font-weight:700;color:var(--navy)}
-ul.l{list-style:none}
-ul.l li{position:relative;padding-left:26px;margin-bottom:9px;font:500 21px/1.4 Inter, Arial, sans-serif}
-ul.l li:before{content:"";position:absolute;left:4px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--blue)}
+ul.l{list-style:disc;padding-left:30px}
+ul.l li{padding-left:4px;margin-bottom:9px;font:500 21px/1.4 Inter, Arial, sans-serif}
+ul.l li::marker{color:var(--blue)}
+.trow{display:flex;align-items:center;gap:14px;padding:0 16px;height:46px;font:500 19px Inter, Arial, sans-serif;color:var(--ink);border-bottom:1px solid var(--line)}
+.trow.alt{background:#F6F8FC}
+.trow.th{background:var(--navy);color:#fff;font:700 18px Inter, Arial, sans-serif;border-radius:12px 12px 0 0;height:44px}
 .tag{display:inline-block;align-self:center;flex:none;line-height:1.25;white-space:nowrap;font:800 14px Inter, Arial, sans-serif;letter-spacing:.6px;padding:4px 10px;border-radius:999px;color:#fff;vertical-align:middle}
 .tag.v1{background:var(--green)}.tag.v2{background:var(--saff)}
 .big{font:800 54px Montserrat, Arial, sans-serif;line-height:1}
@@ -56,7 +59,7 @@ table.m th{background:var(--navy);color:#fff;font:700 18px Inter, Arial, sans-se
 table.m th:first-child{border-top-left-radius:12px}table.m th:last-child{border-top-right-radius:12px}
 table.m td{padding:9px 14px;border-bottom:1px solid var(--line)}
 table.m tr:nth-child(even) td{background:#F6F8FC}
-.lvl{font:800 15px Inter, Arial, sans-serif;padding:3px 10px;border-radius:999px;color:#fff}
+.lvl{display:inline-block;font:800 15px Inter, Arial, sans-serif;padding:3px 12px;border-radius:999px;color:#fff}
 </style>
 </head>
 <body>
@@ -289,10 +292,10 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
     <div class="h" style="font-size:21px"><span class="ic sm" style="background:var(--navy)"><img src="img/ic/brain.png" alt=""></span>MODEL ARCHITECTURE · TRINETRA-SR</div>
   </div>
   <div class="abs" style="left:1240px;top:184px;display:flex;gap:22px;align-items:center;font:600 16px Inter, Arial, sans-serif;color:var(--ink)">
-    <span><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:var(--blue);vertical-align:middle"></span> Fidelity</span>
-    <span><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:var(--saff);vertical-align:middle"></span> Detail</span>
-    <span><span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:var(--green);vertical-align:middle"></span> Trust</span>
-    <span><span style="display:inline-block;width:22px;height:14px;border:2px dashed #7A8599;border-radius:4px;vertical-align:middle"></span> v2 (planned)</span>
+    <div style="display:flex;align-items:center;gap:8px"><div style="width:14px;height:14px;border-radius:4px;background:var(--blue)"></div><div>Fidelity</div></div>
+    <div style="display:flex;align-items:center;gap:8px"><div style="width:14px;height:14px;border-radius:4px;background:var(--saff)"></div><div>Detail</div></div>
+    <div style="display:flex;align-items:center;gap:8px"><div style="width:14px;height:14px;border-radius:4px;background:var(--green)"></div><div>Trust</div></div>
+    <div style="display:flex;align-items:center;gap:8px"><div style="width:22px;height:14px;border:2px dashed #7A8599;border-radius:4px"></div><div>v2 (planned)</div></div>
   </div>
   <!-- input stack with real imagery -->
   <img class="abs" src="img/blr_10m.jpg" alt="" style="left:96px;top:248px;width:112px;height:112px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 2px #B8C1D1;opacity:.5">
@@ -423,15 +426,13 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <!-- risks -->
   <div class="abs ptr" style="left:52px;top:170px;font-size:21px"><span class="dia"></span><u>Potential challenges and risks</u> · <u>Strategies for overcoming these challenges</u></div>
   <div class="abs" style="left:52px;top:210px;width:900px">
-    <table class="m">
-      <tr><th style="width:290px">Risk</th><th style="width:96px">Level</th><th>Mitigation</th></tr>
-      <tr><td class="b">Hallucinated detail</td><td><span class="lvl" style="background:var(--rose)">HIGH</span></td><td>FFT hard constraint + σ map; flagged, never hidden</td></tr>
-      <tr><td class="b">Domain gap (US-trained)</td><td><span class="lvl" style="background:var(--rose)">HIGH</span></td><td>Fine-tune on Indian references (Cartosat, WorldStrat)</td></tr>
-      <tr><td class="b">Clouds &amp; monsoon</td><td><span class="lvl" style="background:var(--saff)">MED</span></td><td>12-month SCL-scored search; multi-date fusion (v2)</td></tr>
-      <tr><td class="b">No 2.5 m ground truth</td><td><span class="lvl" style="background:var(--saff)">MED</span></td><td>Self-consistency now; OpenSR-test + task tests (v2)</td></tr>
-      <tr><td class="b">Sensor misalignment</td><td><span class="lvl" style="background:var(--saff)">MED</span></td><td>Co-registration + shift-tolerant training loss</td></tr>
-      <tr><td class="b">Scale &amp; compute</td><td><span class="lvl" style="background:var(--green)">LOW</span></td><td>Browser on demand; tiled GPU batch for mosaics</td></tr>
-    </table>
+    <div class="trow th"><div style="width:270px">Risk</div><div style="width:100px">Level</div><div style="width:500px">Mitigation</div></div>
+    <div class="trow"><div class="b" style="width:270px">Hallucinated detail</div><div style="width:100px"><div class="lvl" style="background:var(--rose)">HIGH</div></div><div style="width:500px">FFT hard constraint + σ map; flagged, never hidden</div></div>
+    <div class="trow alt"><div class="b" style="width:270px">Domain gap (US-trained)</div><div style="width:100px"><div class="lvl" style="background:var(--rose)">HIGH</div></div><div style="width:500px">Fine-tune on Indian references (Cartosat, WorldStrat)</div></div>
+    <div class="trow"><div class="b" style="width:270px">Clouds &amp; monsoon</div><div style="width:100px"><div class="lvl" style="background:var(--saff)">MED</div></div><div style="width:500px">12-month SCL-scored search; multi-date fusion (v2)</div></div>
+    <div class="trow alt"><div class="b" style="width:270px">No 2.5 m ground truth</div><div style="width:100px"><div class="lvl" style="background:var(--saff)">MED</div></div><div style="width:500px">Self-consistency now; OpenSR-test + task tests (v2)</div></div>
+    <div class="trow"><div class="b" style="width:270px">Sensor misalignment</div><div style="width:100px"><div class="lvl" style="background:var(--saff)">MED</div></div><div style="width:500px">Co-registration + shift-tolerant training loss</div></div>
+    <div class="trow alt"><div class="b" style="width:270px">Scale &amp; compute</div><div style="width:100px"><div class="lvl" style="background:var(--green)">LOW</div></div><div style="width:500px">Browser on demand; tiled GPU batch for mosaics</div></div>
   </div>
   <!-- feasibility quadrant -->
   <div class="abs ptr" style="left:980px;top:170px;font-size:21px"><span class="dia"></span><u>Analysis of the feasibility of the idea</u></div>
@@ -445,15 +446,13 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <!-- validation -->
   <div class="abs" style="left:52px;top:560px;display:flex;align-items:center;gap:12px"><span class="ic sm" style="background:var(--navy)"><img src="img/ic/chart.png" alt=""></span><div style="font:800 21px Montserrat, Arial, sans-serif;color:var(--navy)">VALIDATION · v1 measured on 5 Indian sites</div></div>
   <div class="abs" style="left:52px;top:604px;width:900px">
-    <table class="m" style="font-size:19px">
-      <tr><th>Metric</th><th>Mean</th><th>Range</th><th>Target</th></tr>
-      <tr><td>Consistency PSNR · 10 m bands</td><td class="b">51.1 dB</td><td>49.2 – 53.1</td><td>&gt; 40 dB</td></tr>
-      <tr><td>Consistency PSNR · 20 m bands</td><td class="b">36.8 dB</td><td>34.7 – 40.0</td><td>&gt; 33 dB</td></tr>
-      <tr><td>Spectral angle (SAM) · 10 m</td><td class="b">0.48°</td><td>0.23 – 0.62</td><td>&lt; 1.5°</td></tr>
-      <tr><td>NDVI deviation (MAE)</td><td class="b">0.0066</td><td>0.003 – 0.009</td><td>&lt; 0.02</td></tr>
-      <tr><td>Edge-energy gain vs bicubic</td><td class="b">1.17×</td><td>1.14 – 1.21</td><td>&gt; 1.1×</td></tr>
-      <tr><td>Pixels flagged (σ &gt; 0.01)</td><td class="b">0.05 %</td><td>0 – 0.19</td><td>&lt; 5 %</td></tr>
-    </table>
+    <div class="trow th"><div style="width:380px">Metric</div><div style="width:150px">Mean</div><div style="width:190px">Range</div><div style="width:150px">Target</div></div>
+    <div class="trow"><div style="width:380px">Consistency PSNR · 10 m bands</div><div class="b" style="width:150px">51.1 dB</div><div style="width:190px">49.2 – 53.1</div><div style="width:150px">&gt; 40 dB</div></div>
+    <div class="trow alt"><div style="width:380px">Consistency PSNR · 20 m bands</div><div class="b" style="width:150px">36.8 dB</div><div style="width:190px">34.7 – 40.0</div><div style="width:150px">&gt; 33 dB</div></div>
+    <div class="trow"><div style="width:380px">Spectral angle (SAM) · 10 m</div><div class="b" style="width:150px">0.48°</div><div style="width:190px">0.23 – 0.62</div><div style="width:150px">&lt; 1.5°</div></div>
+    <div class="trow alt"><div style="width:380px">NDVI deviation (MAE)</div><div class="b" style="width:150px">0.0066</div><div style="width:190px">0.003 – 0.009</div><div style="width:150px">&lt; 0.02</div></div>
+    <div class="trow"><div style="width:380px">Edge-energy gain vs bicubic</div><div class="b" style="width:150px">1.17×</div><div style="width:190px">1.14 – 1.21</div><div style="width:150px">&gt; 1.1×</div></div>
+    <div class="trow alt"><div style="width:380px">Pixels flagged (σ &gt; 0.01)</div><div class="b" style="width:150px">0.05 %</div><div style="width:190px">0 – 0.19</div><div style="width:150px">&lt; 5 %</div></div>
   </div>
   <!-- impact -->
   <div class="abs ptr" style="left:980px;top:522px;font-size:21px"><span class="dia"></span><u>Potential impact on the target audience</u></div>
@@ -490,18 +489,18 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
 
   <div class="abs" style="left:52px;top:214px;display:flex;align-items:center;gap:12px"><span class="ic sm" style="background:var(--violet)"><img src="img/ic/flask.png" alt=""></span><div style="font:800 20px Montserrat, Arial, sans-serif;color:var(--navy)">KEY FINDINGS → OUR DESIGN DECISIONS</div></div>
   <div class="abs" style="left:52px;top:256px;width:1240px;display:flex;flex-direction:column;gap:12px;font-size:19.5px">
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t" ><b class="b">SEN2SR [1]:</b> a low-frequency hard constraint gives radiometric consistency; &gt; 15 M parameters brought no significant gain.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">Keep the constraint; compact backbone.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">GeoSR-Bench [13]:</b> PSNR/SSIM gains often do not track downstream-task gains.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">Validate on buildings, roads, bunds.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">LDSR-S2 [6]:</b> the only prior S2 SR with pixel-wise uncertainty, but diffusion is slow.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">TTA σ now; diffusion as optional refiner.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">SEN2NAIP [9]:</b> 2,851 real + 17,657 synthetic pairs; real pairs are mis-registered.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">Synthetic pre-train, shift-tolerant tuning.</b></div></div>
-    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">HighRes-net · WorldStrat · MuS2 [8, 10, 11]:</b> revisits add true sub-pixel information.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:12px 18px;font-size:19.5px;line-height:1.4" class="t"><b class="b">Temporal attention front-end (v2).</b></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t" ><b class="b">SEN2SR [1]:</b> a low-frequency hard constraint gives radiometric consistency; &gt; 15 M parameters brought no significant gain.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Keep the constraint; compact backbone.</b></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">GeoSR-Bench [13]:</b> PSNR/SSIM gains often do not track downstream-task gains.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Validate on buildings, roads, bunds.</b></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">LDSR-S2 [6]:</b> the only prior S2 SR with pixel-wise uncertainty, but diffusion is slow.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">TTA σ now; diffusion as optional refiner.</b></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">SEN2NAIP [9]:</b> 2,851 real + 17,657 synthetic pairs; real pairs are mis-registered.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Synthetic pre-train, shift-tolerant tuning.</b></div></div>
+    <div style="display:flex;gap:12px;align-items:stretch"><div style="flex:1.45;background:#F4F7FB;border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">HighRes-net · WorldStrat · MuS2 [8, 10, 11]:</b> revisits add true sub-pixel information.</div><div style="align-self:center;font:800 26px Inter, Arial, sans-serif;color:var(--saff)">→</div><div style="flex:1;background:var(--green-t);border-radius:14px;padding:10px 18px;font-size:18px;line-height:1.38" class="t"><b class="b">Temporal attention front-end (v2).</b></div></div>
   </div>
 
-  <div class="abs" style="left:52px;top:664px;display:flex;align-items:center;gap:12px"><span class="ic sm" style="background:var(--blue)"><img src="img/ic/book.png" alt=""></span><div style="font:800 20px Montserrat, Arial, sans-serif;color:var(--navy)">REFERENCES BY DOMAIN</div></div>
-  <div class="abs" style="left:52px;top:706px;width:1240px;display:flex;gap:14px">
-    <div style="flex:1;border:2px solid #CFE0FB;border-radius:16px;padding:12px 14px"><div style="font:800 16px Inter, Arial, sans-serif;color:var(--blue);margin-bottom:6px">SUPER-RESOLUTION</div><div class="s" style="font-size:16.5px;line-height:1.45;color:var(--ink)">[1] Aybar et al. 2025, SEN2SR, <i>Remote Sens. Environ.</i><br>[2] Wan et al. 2024, SPAN, CVPRW<br>[3] Liang et al. 2021, SwinIR, ICCVW<br>[4] Wang et al. 2018, ESRGAN, ECCVW<br>[5] Yue et al. 2023, ResShift, NeurIPS<br>[6] Donike et al. 2025, latent-diffusion S2 SR<br>[7] DiffFuSR 2025, arXiv 2506.11764</div></div>
-    <div style="flex:1;border:2px solid #F9D7B3;border-radius:16px;padding:12px 14px"><div style="font:800 16px Inter, Arial, sans-serif;color:var(--saff);margin-bottom:6px">DATA &amp; BENCHMARKS</div><div class="s" style="font-size:16.5px;line-height:1.45;color:var(--ink)">[8] Deudon et al. 2020, HighRes-net<br>[9] Aybar et al. 2024, SEN2NAIP, <i>Sci. Data</i><br>[10] Cornebise et al. 2022, WorldStrat, NeurIPS<br>[11] MuS2 2023, <i>Sci. Data</i><br>[12] ESA OpenSR, opensr-test<br>[13] GeoSR-Bench 2026, arXiv 2605.00310</div></div>
-    <div style="flex:1;border:2px solid #BFE3C9;border-radius:16px;padding:12px 14px"><div style="font:800 16px Inter, Arial, sans-serif;color:var(--green);margin-bottom:6px">UNCERTAINTY &amp; TOOLS</div><div class="s" style="font-size:16.5px;line-height:1.45;color:var(--ink)">[14] Lakshminarayanan et al. 2017, Deep ensembles<br>[15] Wang et al. 2019, TTA uncertainty<br>[16] Angelopoulos &amp; Bates 2021, Conformal prediction<br>[17] ESA, Sentinel-2 MSI user guide<br>[18] Copernicus · Element 84 Earth Search<br>[19] ONNX Runtime Web</div></div>
+  <div class="abs" style="left:52px;top:690px;display:flex;align-items:center;gap:12px"><span class="ic sm" style="background:var(--blue)"><img src="img/ic/book.png" alt=""></span><div style="font:800 20px Montserrat, Arial, sans-serif;color:var(--navy)">REFERENCES BY DOMAIN</div></div>
+  <div class="abs" style="left:52px;top:732px;width:1240px;display:flex;gap:14px">
+    <div style="flex:1;border:2px solid #CFE0FB;border-radius:16px;padding:12px 14px"><div style="font:800 16px Inter, Arial, sans-serif;color:var(--blue);margin-bottom:6px">SUPER-RESOLUTION</div><div class="s" style="font-size:15.5px;line-height:1.42;color:var(--ink)">[1] Aybar et al. 2025, SEN2SR, <i>Remote Sens. Environ.</i><br>[2] Wan et al. 2024, SPAN, CVPRW<br>[3] Liang et al. 2021, SwinIR, ICCVW<br>[4] Wang et al. 2018, ESRGAN, ECCVW<br>[5] Yue et al. 2023, ResShift, NeurIPS<br>[6] Donike et al. 2025, latent-diffusion S2 SR<br>[7] DiffFuSR 2025, arXiv 2506.11764</div></div>
+    <div style="flex:1;border:2px solid #F9D7B3;border-radius:16px;padding:12px 14px"><div style="font:800 16px Inter, Arial, sans-serif;color:var(--saff);margin-bottom:6px">DATA &amp; BENCHMARKS</div><div class="s" style="font-size:15.5px;line-height:1.42;color:var(--ink)">[8] Deudon et al. 2020, HighRes-net<br>[9] Aybar et al. 2024, SEN2NAIP, <i>Sci. Data</i><br>[10] Cornebise et al. 2022, WorldStrat, NeurIPS<br>[11] MuS2 2023, <i>Sci. Data</i><br>[12] ESA OpenSR, opensr-test<br>[13] GeoSR-Bench 2026, arXiv 2605.00310</div></div>
+    <div style="flex:1;border:2px solid #BFE3C9;border-radius:16px;padding:12px 14px"><div style="font:800 16px Inter, Arial, sans-serif;color:var(--green);margin-bottom:6px">UNCERTAINTY &amp; TOOLS</div><div class="s" style="font-size:15.5px;line-height:1.42;color:var(--ink)">[14] Lakshminarayanan et al. 2017, Deep ensembles<br>[15] Wang et al. 2019, TTA uncertainty<br>[16] Angelopoulos &amp; Bates 2021, Conformal prediction<br>[17] ESA, Sentinel-2 MSI user guide<br>[18] Copernicus · Element 84 Earth Search<br>[19] ONNX Runtime Web</div></div>
   </div>
 
   <!-- resources -->
