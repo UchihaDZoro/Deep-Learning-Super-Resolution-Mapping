@@ -39,16 +39,16 @@ SCALE = 4           # 10 m -> 2.5 m
 UNC_MAX = 0.02      # reflectance std mapped to top of colour scale
 
 AOIS = [
-    dict(id="bengaluru", name="Bengaluru — dense urban", lat=12.9716, lon=77.5946,
-         dates="2024-01-01/2024-03-31", use="Urban mapping: small buildings, narrow roads"),
-    dict(id="punjab", name="Ludhiana, Punjab — smallholder farms", lat=30.8700, lon=75.7900,
-         dates="2024-02-01/2024-03-31", use="Crop monitoring: field boundaries, NDVI at 2.5 m"),
-    dict(id="mumbai", name="Mumbai — port & informal settlements", lat=19.0400, lon=72.8550,
-         dates="2024-01-01/2024-03-31", use="Urban & coastal: dense settlements, water edges"),
-    dict(id="wayanad", name="Wayanad, Kerala — 2024 landslide", lat=11.4750, lon=76.1350,
-         dates="2024-12-01/2025-03-31", use="Disaster assessment: landslide scar & debris path"),
-    dict(id="delhi_yamuna", name="Delhi — Yamuna floodplain", lat=28.6100, lon=77.2600,
-         dates="2024-10-15/2024-12-31", use="Water & infrastructure: bridges, river edges"),
+    dict(id="bengaluru", name="Bengaluru, Karnataka", lat=12.9716, lon=77.5946,
+         dates="2024-01-01/2024-03-31", use="Dense urban core around Cubbon Park. Tests recovery of individual buildings, stadiums and narrow streets."),
+    dict(id="punjab", name="Ludhiana, Punjab", lat=30.8700, lon=75.7900,
+         dates="2024-02-01/2024-03-31", use="Irrigated smallholder farmland in the wheat season. Tests field-boundary recovery and NDVI at 2.5 m."),
+    dict(id="mumbai", name="Mumbai, Maharashtra", lat=19.0400, lon=72.8550,
+         dates="2024-01-01/2024-03-31", use="Port, rail yards and informal settlements. Tests very dense structures and sharp water edges."),
+    dict(id="wayanad", name="Wayanad, Kerala", lat=11.4750, lon=76.1350,
+         dates="2024-12-01/2025-03-31", use="Debris-flow track of the July 2024 Mundakkai–Chooralmala landslide, seven months after the event."),
+    dict(id="delhi_yamuna", name="Delhi, Yamuna floodplain", lat=28.6100, lon=77.2600,
+         dates="2024-10-15/2024-12-31", use="River channel, bridges and floodplain agriculture. Tests linear infrastructure and water boundaries."),
 ]
 
 

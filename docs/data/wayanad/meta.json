@@ -1,10 +1,10 @@
 {
   "id": "wayanad",
-  "name": "Wayanad, Kerala \u2014 2024 landslide",
+  "name": "Wayanad, Kerala",
   "lat": 11.475,
   "lon": 76.135,
   "dates": "2024-12-01/2025-03-31",
-  "use": "Disaster assessment: landslide scar & debris path",
+  "use": "Debris-flow track of the July 2024 Mundakkai–Chooralmala landslide, seven months after the event.",
   "scene": "S2C_MSIL2A_20250224T051841_R062_T43PFN_20250224T103411",
   "date": "2025-02-24",
   "cloud": 0.0,

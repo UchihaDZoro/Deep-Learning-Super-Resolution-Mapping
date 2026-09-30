@@ -4,9 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TRINETRA-SR · Sentinel-2 at 2.5 m</title>
-<meta name="description" content="Trustworthy deep-learning super-resolution for Sentinel-2: 10 m to 2.5 m with a per-pixel trust map, running entirely in your browser. SIH PS 26142 (NTRO).">
+<meta name="description" content="Deep-learning super-resolution for Sentinel-2: 10 m to 2.5 m on all ten bands, radiometrically consistent, with a per-pixel uncertainty map. Runs entirely in the browser. SIH problem statement 26142 (NTRO).">
 <meta name="theme-color" content="#03050b">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%235ee7ff'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5.5' fill='none' stroke='%23ffb454' stroke-width='2' transform='rotate(-25 16 16)'/%3E%3C/svg%3E">
+<meta property="og:title" content="TRINETRA-SR · Sentinel-2 at 2.5 m">
+<meta property="og:description" content="Super-resolve any Sentinel-2 scene to 2.5 m in your browser, with a per-pixel uncertainty map and radiometric validation.">
+<meta property="og:image" content="data/bengaluru/sr.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2303050b'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%235ee7ff'/%3E%3Ccircle cx='16' cy='16' r='2.2' fill='%2303050b'/%3E%3Cellipse cx='16' cy='16' rx='12.5' ry='4.8' fill='none' stroke='%23ffb454' stroke-width='1.8' transform='rotate(-25 16 16)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -14,20 +17,21 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<a class="skip" href="#lab">Skip to the Live Lab</a>
 <canvas id="space" aria-hidden="true"></canvas>
-<div class="vignette"></div>
+<div class="vignette" aria-hidden="true"></div>
 <div class="pin-layer" id="pins"></div>
-<div class="progress" id="progress"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
 
 <nav class="top glass" aria-label="Sections">
-  <a class="brand" href="#top" aria-label="TRINETRA-SR home">
+  <a class="brand" href="#top" aria-label="TRINETRA-SR, back to top">
     <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6.5" fill="#5ee7ff"/><circle cx="16" cy="16" r="2.4" fill="#03050b"/><ellipse cx="16" cy="16" rx="14" ry="5.5" fill="none" stroke="#ffb454" stroke-width="1.8" transform="rotate(-25 16 16)"/></svg>
-    TRINETRA
+    <span>TRINETRA<span class="brand-sub">-SR</span></span>
   </a>
   <div class="navlinks" id="navlinks">
-    <a href="#problem">Problem</a><a href="#method">Method</a><a href="#lab">Live Lab</a><a href="#results">Results</a><a href="#trust">Trust</a><a href="#roadmap">Roadmap</a>
+    <a href="#problem">Motivation</a><a href="#method">Method</a><a href="#lab">Live Lab</a><a href="#results">Results</a><a href="#trust">Validation</a><a href="#roadmap">Roadmap</a>
   </div>
-  <a class="btn primary sm" href="#lab">Try it live</a>
+  <a class="btn primary sm" href="#lab">Open Live Lab</a>
 </nav>
 
 <main id="top">
@@ -35,51 +39,51 @@
   <section class="hero">
     <div class="wrap">
       <div class="copy">
-        <div class="eyebrow intro">Smart India Hackathon · PS 26142 · NTRO</div>
-        <h1 class="intro d1">Sentinel-2,<br>seen at <span class="res">2.5&nbsp;m.</span><br><em>With a trust map.</em></h1>
-        <p class="lede intro d2">TRINETRA-SR super-resolves free 10 m Sentinel-2 imagery by 4×, keeps every reflectance value physically consistent, and tells analysts which pixels are observed and which are inferred.</p>
+        <div class="eyebrow intro">SIH · Problem statement 26142 · NTRO</div>
+        <h1 class="intro d1">Sentinel-2 at <span class="res">2.5&nbsp;m.</span><br><em>Every pixel accounted&nbsp;for.</em></h1>
+        <p class="lede intro d2">TRINETRA-SR raises the spatial resolution of free Sentinel-2 imagery fourfold, preserves its radiometry, and attaches a per-pixel uncertainty map to every product, so analysts can separate measured detail from reconstructed detail.</p>
         <div class="ctas intro d3">
-          <a class="btn primary" href="#lab">Launch the Live Lab
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-          <a class="btn ghost" href="#results">Explore results</a>
+          <a class="btn primary" href="#lab">Open the Live Lab
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn ghost" href="#results">View study areas</a>
         </div>
-        <div class="chips intro d4">
-          <div class="chip glass"><b>4×</b><span>linear resolution<br>10 m → 2.5 m</span></div>
-          <div class="chip glass"><b>10</b><span>spectral bands<br>incl. red-edge &amp; SWIR</span></div>
-          <div class="chip glass"><b id="chipPsnr">~51 dB</b><span>radiometric<br>consistency</span></div>
-          <div class="chip glass"><b>0</b><span>servers: runs in<br>your browser</span></div>
-        </div>
+        <dl class="chips intro d4">
+          <div class="chip glass"><dt>4×</dt><dd>10 m → 2.5 m<br>ground sampling</dd></div>
+          <div class="chip glass"><dt>10</dt><dd>bands: visible, NIR,<br>red-edge, SWIR</dd></div>
+          <div class="chip glass"><dt id="chipPsnr">51 dB</dt><dd>mean radiometric<br>consistency</dd></div>
+          <div class="chip glass"><dt>Local</dt><dd>runs in the browser,<br>nothing uploaded</dd></div>
+        </dl>
       </div>
     </div>
-    <div class="globe-hint">
+    <div class="globe-hint" aria-hidden="true">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>
-      drag the globe · click a pin
+      Drag to rotate · select a study area
     </div>
-    <div class="scrollcue">SCROLL<i></i></div>
+    <a class="scrollcue" href="#problem" aria-label="Scroll to content">Scroll<i></i></a>
   </section>
 
-  <!-- ============================================================ PROBLEM -->
+  <!-- ============================================================ MOTIVATION -->
   <section id="problem">
     <div class="wrap split">
       <div>
-        <div class="eyebrow reveal">01 · The problem</div>
-        <h2 class="reveal d1">Ten metres hides <em>what decisions need.</em></h2>
-        <p class="lede reveal d2">Sentinel-2 revisits every five days, globally and for free. But at 10 m one pixel covers a small house, and the details analysts act on blur away.</p>
+        <div class="eyebrow reveal">01 · Motivation</div>
+        <h2 class="reveal d1">At 10 m, the details <em>that matter disappear.</em></h2>
+        <p class="lede reveal d2">Sentinel-2 images every land surface on Earth every five days, free of charge. That makes it the default source for agricultural, urban and disaster monitoring in India. But a 10 m pixel is wider than most rooftops, rural roads and field bunds.</p>
         <div class="misses">
-          <div class="miss glass reveal d1"><div class="k">URBAN</div><h4>Small buildings</h4><p>Individual rooftops merge into a single texture.</p></div>
-          <div class="miss glass reveal d2"><div class="k">TRANSPORT</div><h4>Narrow roads</h4><p>Lanes under 10 m wide break up or vanish.</p></div>
-          <div class="miss glass reveal d3"><div class="k">AGRICULTURE</div><h4>Field boundaries</h4><p>Smallholder bunds in India are only a few metres wide.</p></div>
-          <div class="miss glass reveal d4"><div class="k">DISASTER</div><h4>Local damage</h4><p>Landslide edges, breached banks and flood lines.</p></div>
+          <div class="miss glass reveal d1"><div class="k">Urban</div><h4>Individual structures</h4><p>Dense housing merges into uniform texture, limiting building counts and change detection.</p></div>
+          <div class="miss glass reveal d2"><div class="k">Transport</div><h4>Narrow roads</h4><p>Roads narrower than a pixel fragment or vanish from extracted networks.</p></div>
+          <div class="miss glass reveal d3"><div class="k">Agriculture</div><h4>Field boundaries</h4><p>Most Indian holdings are under one hectare. The bunds between them are only metres wide.</p></div>
+          <div class="miss glass reveal d4"><div class="k">Disaster</div><h4>Localised damage</h4><p>Landslide scarps, breached embankments and flood margins blur into their surroundings.</p></div>
         </div>
       </div>
-      <div class="glass triptych reveal d2">
+      <figure class="glass triptych reveal d2">
         <div class="trip">
-          <figure><div class="crop px" style="background-image:url(data/bengaluru/input.jpg)"></div><figcaption><b>10 m</b> native</figcaption></figure>
-          <figure><div class="crop" style="background-image:url(data/bengaluru/bicubic.jpg)"></div><figcaption><b>Bicubic</b> 2.5 m</figcaption></figure>
-          <figure><div class="crop" style="background-image:url(data/bengaluru/sr.jpg)"></div><figcaption><b>TRINETRA</b> 2.5 m</figcaption></figure>
+          <div><div class="crop px" style="background-image:url(data/bengaluru/input.jpg)" role="img" aria-label="Sentinel-2 at 10 m"></div><div class="cap"><b>Sentinel-2</b><span>10 m</span></div></div>
+          <div><div class="crop" style="background-image:url(data/bengaluru/bicubic.jpg)" role="img" aria-label="Bicubic interpolation"></div><div class="cap"><b>Bicubic</b><span>2.5 m</span></div></div>
+          <div><div class="crop" style="background-image:url(data/bengaluru/sr.jpg)" role="img" aria-label="TRINETRA-SR output"></div><div class="cap"><b>TRINETRA-SR</b><span>2.5 m</span></div></div>
         </div>
-        <p class="trip-note">M. Chinnaswamy Stadium, Bengaluru · Sentinel-2 L2A, 13 Mar 2024. Same scene, same colour stretch.</p>
-      </div>
+        <figcaption>M. Chinnaswamy Stadium, Bengaluru. Sentinel-2 L2A, 13 March 2024. Identical colour stretch in all three panels.</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -88,87 +92,98 @@
     <div class="wrap">
       <div class="sec-head">
         <div class="eyebrow reveal">02 · Method</div>
-        <h2 class="reveal d1">From orbit to 2.5 m <em>in five steps.</em></h2>
-        <p class="lede reveal d2">One pipeline, written twice: in Python for batch production and in the browser for the live lab. Both produce identical numbers.</p>
+        <h2 class="reveal d1">Five stages from archive <em>to analysis-ready product.</em></h2>
+        <p class="lede reveal d2">The same pipeline runs as a Python batch job and entirely inside the browser. On identical scenes the two implementations agree to within 0.05 dB.</p>
       </div>
-      <div class="steps">
-        <div class="step glass reveal"><div class="n">1</div><h4>Acquire</h4><p>STAC search for Sentinel-2 L2A over the point. Picks the clearest window using the scene-classification cloud mask.</p><span class="tag">Earth Search</span><span class="tag">SCL</span></div>
-        <div class="step glass reveal d1"><div class="n">2</div><h4>Prepare</h4><p>Reads only the needed window from cloud-optimised GeoTIFFs. Harmonises the baseline-04 offset and stacks 10 bands.</p><span class="tag">COG</span><span class="tag">BOA</span></div>
-        <div class="step glass reveal d2"><div class="n">3</div><h4>Super-resolve</h4><p>Lightweight SR network, tiled with feathered overlaps. A low-frequency hard constraint pins radiometry to the input.</p><span class="tag">ONNX</span><span class="tag">WASM</span></div>
-        <div class="step glass reveal d3"><div class="n">4</div><h4>Trust layer</h4><p>A dihedral ensemble gives a per-pixel σ. The output is degraded back to 10 m and 20 m and checked against the input.</p><span class="tag">TTA</span><span class="tag">PSNR·SAM</span></div>
-        <div class="step glass reveal d4"><div class="n">5</div><h4>Deliver</h4><p>2.5 m GeoTIFFs in the original UTM grid, plus an uncertainty band, metrics and an interactive comparison.</p><span class="tag">GeoTIFF</span><span class="tag">EPSG</span></div>
-      </div>
+      <ol class="steps">
+        <li class="step glass reveal"><div class="n">1</div><h4>Acquire</h4><p>Queries the Sentinel-2 L2A archive for the location, then ranks candidate scenes by the cloud-free fraction of the target window.</p><span class="tag">STAC</span><span class="tag">SCL mask</span></li>
+        <li class="step glass reveal d1"><div class="n">2</div><h4>Prepare</h4><p>Reads only the required window from cloud-optimised GeoTIFFs, harmonises processing baselines and stacks ten bands.</p><span class="tag">COG</span><span class="tag">L2A reflectance</span></li>
+        <li class="step glass reveal d2"><div class="n">3</div><h4>Super-resolve</h4><p>A compact network predicts 2.5 m detail. A frequency-domain constraint then restores the input's low-frequency content exactly.</p><span class="tag">ONNX</span><span class="tag">×4</span></li>
+        <li class="step glass reveal d3"><div class="n">4</div><h4>Quantify</h4><p>Eight rotated and mirrored inferences give a per-pixel uncertainty. The output is also re-checked against the input.</p><span class="tag">Ensemble σ</span><span class="tag">Self-consistency</span></li>
+        <li class="step glass reveal d4"><div class="n">5</div><h4>Deliver</h4><p>GeoTIFFs in the source UTM grid, an uncertainty layer, validation metrics and an interactive comparison.</p><span class="tag">GeoTIFF</span><span class="tag">EPSG</span></li>
+      </ol>
       <div class="pillars">
-        <div class="pillar glass reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
-          <h4>Physics-consistent</h4><p>Degrade the 2.5 m output and you recover the observed 10 m input (&gt;49 dB). NDVI and other indices stay scientifically valid.</p></div>
-        <div class="pillar glass reveal d1"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
-          <h4>Honest about inference</h4><p>Every product ships with an uncertainty map, so reconstructed detail is never mistaken for observed detail.</p></div>
-        <div class="pillar glass reveal d2"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
-          <h4>Deployable anywhere</h4><p>A 19 MB model with no server. It runs air-gapped on an analyst's laptop, and the same code runs as a batch job.</p></div>
+        <div class="pillar glass reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h4>Radiometry preserved by construction</h4><p>Degrade a 2.5 m product and you recover the measured 10 m input at over 49 dB. NDVI and other indices remain valid.</p></div>
+        <div class="pillar glass reveal d1"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h4>Uncertainty reported, not hidden</h4><p>Reconstructed detail is flagged wherever the model disagrees with itself, so it is never mistaken for observation.</p></div>
+        <div class="pillar glass reveal d2"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+          <h4>Runs where analysts work</h4><p>A 19 MB model with no server dependency. It works on a standard laptop, offline once cached, and suits air-gapped networks.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- ============================================================ LAB -->
+  <!-- ============================================================ LIVE LAB -->
   <section id="lab">
     <div class="wrap">
       <div class="sec-head">
         <div class="eyebrow reveal">03 · Live Lab</div>
-        <h2 class="reveal d1">Pick any place on Earth. <em>Watch it sharpen.</em></h2>
-        <p class="lede reveal d2">Search a place or click the map. Your browser fetches the clearest recent Sentinel-2 scene and runs the network locally.</p>
+        <h2 class="reveal d1">Run it on any location <em>on Earth.</em></h2>
+        <p class="lede reveal d2">Search for a place or click the map. Your browser selects the clearest recent Sentinel-2 acquisition, reads only the pixels it needs, and runs the model locally.</p>
       </div>
       <div class="lab glass strong reveal">
         <div class="mapbox">
-          <div id="map" aria-label="Map: click to choose a location"></div>
-          <div class="search" id="search">
+          <div id="map" aria-label="Map. Click to choose a location."></div>
+          <div class="search" id="search" role="search">
             <div class="bar">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-              <input id="q" type="search" placeholder="Search a city, landmark or district…" autocomplete="off" aria-label="Search location">
-              <button class="iconbtn" id="locate" title="Use my location" aria-label="Use my location">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input id="q" type="search" placeholder="Search a city, landmark or district" autocomplete="off" aria-label="Search for a location" aria-controls="qres" aria-autocomplete="list">
+              <button class="iconbtn" id="locate" type="button" title="Use my location" aria-label="Use my location">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg></button>
             </div>
-            <div class="results" id="qres" role="listbox"></div>
+            <div class="results" id="qres" role="listbox" aria-label="Search results"></div>
           </div>
+          <div class="maplegend"><span class="sw"></span>Processing footprint</div>
         </div>
         <div class="panel">
           <div class="place">
-            <div><h3 id="placeName">Hyderabad</h3><div class="coords" id="placeCoords">17.3850°N, 78.4867°E</div></div>
-            <span class="status"><span class="dot" id="engDot"></span><span id="engTxt">loading</span></span>
+            <div><div class="flabel">Selected location</div><h3 id="placeName">Hyderabad</h3><div class="coords" id="placeCoords">17.3850°N, 78.4867°E</div></div>
+            <span class="status" title="Inference engine status"><span class="dot" id="engDot"></span><span id="engTxt">Loading</span></span>
           </div>
           <div class="row2">
-            <div class="field"><label for="d0">From</label><input class="input" id="d0" type="date"></div>
-            <div class="field"><label for="d1">To</label><input class="input" id="d1" type="date"></div>
+            <div class="field"><label for="d0">Search from</label><input class="input" id="d0" type="date"></div>
+            <div class="field"><label for="d1">Until</label><input class="input" id="d1" type="date"></div>
           </div>
           <div>
-            <span class="flabel">Area</span>
-            <div class="seg" id="size">
-              <button data-v="128" class="on">1.28 km<small>~10 s</small></button>
-              <button data-v="192">1.92 km<small>~30 s</small></button>
-              <button data-v="256">2.56 km<small>~1 min</small></button>
+            <span class="flabel" id="sizeLbl">Area</span>
+            <div class="seg" id="size" role="radiogroup" aria-labelledby="sizeLbl">
+              <button type="button" data-v="128" class="on" role="radio" aria-checked="true">1.28 km<small>≈ 10 s</small></button>
+              <button type="button" data-v="192" role="radio" aria-checked="false">1.92 km<small>≈ 30 s</small></button>
+              <button type="button" data-v="256" role="radio" aria-checked="false">2.56 km<small>≈ 1 min</small></button>
             </div>
           </div>
           <div>
-            <span class="flabel">Uncertainty passes</span>
-            <div class="seg" id="tta">
-              <button data-v="2">2<small>fastest</small></button>
-              <button data-v="4" class="on">4<small>balanced</small></button>
-              <button data-v="8">8<small>best σ</small></button>
+            <span class="flabel" id="ttaLbl">Uncertainty passes</span>
+            <div class="seg" id="tta" role="radiogroup" aria-labelledby="ttaLbl">
+              <button type="button" data-v="2" role="radio" aria-checked="false">2<small>fastest</small></button>
+              <button type="button" data-v="4" class="on" role="radio" aria-checked="true">4<small>balanced</small></button>
+              <button type="button" data-v="8" role="radio" aria-checked="false">8<small>most robust</small></button>
             </div>
           </div>
           <div class="runbox">
-            <button class="btn primary" id="run">Super-resolve this place</button>
-            <div class="prog"><div id="bar"></div></div>
-            <div class="stage" id="stage"></div>
-            <div class="err" id="err"></div>
+            <button class="btn primary" id="run" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg>
+              <span>Super-resolve this location</span></button>
+            <div class="prog" aria-hidden="true"><div id="bar"></div></div>
+            <div class="stage" id="stage" aria-live="polite"></div>
+            <div class="err" id="err" role="alert"></div>
           </div>
-          <label class="drop" id="drop">
-            <input type="file" id="file" accept=".tif,.tiff" hidden>
-            <b>Drop a Sentinel-2 GeoTIFF</b> or click to browse<br>
-            <span style="font-size:12px">10-band L2A stack (B2–B12) or a 12/13-band full stack</span>
-          </label>
+          <div class="divider-line"><span>or use your own data</span></div>
+          <div class="upload" id="drop">
+            <input type="file" id="file" accept=".tif,.tiff,image/tiff" class="visually-hidden">
+            <div class="up-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg></div>
+            <div class="up-body">
+              <label for="file" class="btn ghost sm">Upload GeoTIFF</label>
+              <span class="up-or">or drop a file here</span>
+              <div class="up-note" id="upNote">Sentinel-2 L2A, 10 bands (B2–B8A, B11, B12) or a full 12/13-band stack · max 60 MB</div>
+            </div>
+          </div>
+          <a class="sample" href="data/samples/S2L2A_Delhi-Yamuna_10band_10m_128px.tif" download>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
+            <span>Need a test file? Download a sample scene <span class="sz">(266 KB)</span></span></a>
           <div class="privacy">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-            Runs 100% in your browser. Nothing you pick or upload leaves this device.
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+            Processing happens on this device. Selected locations and uploaded files are never sent to a server.
           </div>
         </div>
       </div>
@@ -179,45 +194,49 @@
   <section id="results">
     <div class="wrap">
       <div class="sec-head">
-        <div class="eyebrow reveal">04 · Results explorer</div>
-        <h2 class="reveal d1">Swipe between <em>what was seen and what we see.</em></h2>
-        <p class="lede reveal d2">Five Indian study areas, plus anything you run in the Live Lab. Drag the handle, scroll to zoom, and switch on the trust map.</p>
+        <div class="eyebrow reveal">04 · Results</div>
+        <h2 class="reveal d1">Compare input and output, <em>pixel by pixel.</em></h2>
+        <p class="lede reveal d2">Five study areas across India, plus every scene you process in the Live Lab. Drag the divider, scroll to zoom, and overlay the uncertainty map.</p>
       </div>
-      <div class="gallery reveal" id="gallery"></div>
+      <div class="gallery reveal" id="gallery" role="list" aria-label="Scenes"></div>
       <div class="viewer-grid reveal d1">
         <div class="glass vcard">
           <div class="toolbar">
-            <div class="seg" id="mode">
-              <button data-m="sr" class="on">vs 10 m</button>
-              <button data-m="bic">vs Bicubic</button>
-              <button data-m="ndvi">NDVI</button>
+            <div class="seg" id="mode" role="radiogroup" aria-label="Comparison">
+              <button type="button" data-m="sr" class="on" role="radio" aria-checked="true">Input 10 m</button>
+              <button type="button" data-m="bic" role="radio" aria-checked="false">Bicubic</button>
+              <button type="button" data-m="ndvi" role="radio" aria-checked="false">NDVI</button>
             </div>
-            <label class="toggle"><input type="checkbox" id="unc"> Trust map</label>
-            <input type="range" id="uncop" min="0" max="100" value="80" aria-label="Trust map opacity" style="width:90px">
+            <label class="toggle"><input type="checkbox" id="unc"> Uncertainty</label>
+            <input type="range" id="uncop" min="0" max="100" value="80" aria-label="Uncertainty overlay opacity">
+            <span class="tb-spacer"></span>
+            <button class="iconbtn sm" id="fs" type="button" title="Full screen" aria-label="Full screen">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
           </div>
-          <div class="viewer" id="viewer">
+          <div class="viewer" id="viewer" tabindex="0" aria-label="Before and after comparison. Arrow keys move the divider.">
             <div class="layer" id="L"><img id="imgL" class="px" alt="Before"></div>
-            <div class="layer" id="R"><img id="imgR" alt="After"><img id="imgU" alt="Uncertainty" style="display:none"></div>
+            <div class="layer" id="R"><img id="imgR" alt="After"><img id="imgU" alt="Uncertainty overlay" style="display:none"></div>
             <div class="divider" id="div"><div class="handle" id="handle">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div></div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6"/></svg></div></div>
             <div class="vlabel l" id="lblL">Sentinel-2 · 10 m</div>
-            <div class="vlabel r" id="lblR">TRINETRA · 2.5 m</div>
-            <div class="legend" id="legend"><div id="legT">Uncertainty σ</div><div class="bar" id="legBar"></div><div class="ticks"><span id="leg0">0</span><span id="leg1">≥0.02</span></div></div>
+            <div class="vlabel r" id="lblR">TRINETRA-SR · 2.5 m</div>
+            <div class="legend" id="legend"><div id="legT">Uncertainty σ</div><div class="bar" id="legBar"></div><div class="ticks"><span id="leg0">0</span><span id="leg1">≥ 0.02</span></div></div>
             <div class="scalebar"><span id="sbl">500 m</span><div id="sbw" style="width:80px"></div></div>
-            <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Reset" style="font-size:13px">⤢</button></div>
-            <div class="loading" id="loading">loading…</div>
+            <div class="zoomctl"><button type="button" id="zin" title="Zoom in" aria-label="Zoom in">+</button><button type="button" id="zout" title="Zoom out" aria-label="Zoom out">−</button><button type="button" id="zreset" title="Reset view" aria-label="Reset view">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.7L3 8"/><path d="M3 3v5h5"/></svg></button></div>
+            <div class="loading" id="loading"><span class="spinner"></span></div>
           </div>
-          <div class="hint">Drag the handle to compare · scroll or +/− to zoom · drag to pan.</div>
+          <div class="hint">Drag the divider or use ← → · scroll or +/− to zoom · drag the image to pan</div>
         </div>
         <aside class="side">
           <div class="glass">
+            <div class="flabel" id="aoiKind">Study area</div>
             <h3 id="aoiName">—</h3>
             <div class="use" id="aoiUse"></div>
-            <div class="kv" id="aoiMeta"></div>
+            <dl class="kv" id="aoiMeta"></dl>
           </div>
-          <div class="glass" id="dlcard" style="display:none">
-            <h3 style="font-size:16px">Downloads</h3>
-            <div class="use" style="margin-bottom:0">GeoTIFF in the input's UTM grid · reflectance ×10000</div>
+          <div class="glass">
+            <h3 class="h-sm">Downloads</h3>
             <div class="dls" id="dls"></div>
           </div>
         </aside>
@@ -225,16 +244,17 @@
     </div>
   </section>
 
-  <!-- ============================================================ TRUST -->
+  <!-- ============================================================ VALIDATION -->
   <section id="trust">
     <div class="wrap">
       <div class="sec-head">
-        <div class="eyebrow reveal">05 · Trust &amp; validation</div>
-        <h2 class="reveal d1">Numbers you can <em>defend in a briefing.</em></h2>
-        <p class="lede reveal d2">Computed automatically for every scene. The 2.5 m output is degraded back to each band's native resolution and compared with what the satellite actually measured.</p>
+        <div class="eyebrow reveal">05 · Validation</div>
+        <h2 class="reveal d1">Measured against <em>what the satellite recorded.</em></h2>
+        <p class="lede reveal d2">No 2.5 m reference exists for an arbitrary scene, so every product is tested for self-consistency. It is degraded back to each band's native resolution and compared with the original measurement.</p>
       </div>
       <div class="trust-context reveal" id="trustCtx"></div>
       <div class="metrics" id="metrics"></div>
+      <p class="note reveal">Self-consistency shows that no measured information was altered. It does not prove that the reconstructed detail is correct. Benchmarking against independent high-resolution references (OpenSR-test, SEN2NAIP cross-sensor pairs) is part of the v2 plan.</p>
     </div>
   </section>
 
@@ -243,15 +263,15 @@
     <div class="wrap">
       <div class="sec-head">
         <div class="eyebrow reveal">06 · Roadmap</div>
-        <h2 class="reveal d1">Prototype today. <em>Operational next.</em></h2>
+        <h2 class="reveal d1">What v1 delivers, <em>and what comes next.</em></h2>
       </div>
       <div class="road">
         <div class="col glass reveal">
-          <h3>In this prototype <span class="pill live">LIVE</span></h3>
+          <h3>Prototype v1 <span class="pill live">Available</span></h3>
           <ul id="liveList"></ul>
         </div>
         <div class="col glass reveal d1">
-          <h3>Next iteration <span class="pill next">V2</span></h3>
+          <h3>Version 2 <span class="pill next">Planned</span></h3>
           <ul id="nextList"></ul>
         </div>
       </div>
@@ -263,31 +283,41 @@
   <div class="wrap">
     <div class="foot">
       <div>
-        <a class="brand" href="#top" style="margin-bottom:12px">
+        <a class="brand" href="#top">
           <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6.5" fill="#5ee7ff"/><circle cx="16" cy="16" r="2.4" fill="#03050b"/><ellipse cx="16" cy="16" rx="14" ry="5.5" fill="none" stroke="#ffb454" stroke-width="1.8" transform="rotate(-25 16 16)"/></svg>
-          TRINETRA-SR</a>
-        <p>Deep-learning super-resolution mapping from medium-resolution satellite imagery. Smart India Hackathon, problem statement 26142, National Technical Research Organisation.</p>
+          <span>TRINETRA<span class="brand-sub">-SR</span></span></a>
+        <p class="foot-lede">Deep-learning super-resolution mapping from medium-resolution satellite imagery. Prototype v1 for Smart India Hackathon problem statement 26142, National Technical Research Organisation.</p>
+        <a class="btn ghost sm" href="https://github.com/UchihaDZoro/Deep-Learning-Super-Resolution-Mapping">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.2-3.1-.1-.4-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 016 0C17.3 4.7 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.2.8.8 1.2 1.9 1.2 3.1 0 4.7-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0012 .5z"/></svg>
+          Source code</a>
       </div>
       <div>
-        <h4>Data &amp; models</h4>
+        <h4>Model</h4>
+        <ul>
+          <li>SEN2SR-Lite, ESA OpenSR (Aybar et al., 2025, <i>Remote Sensing of Environment</i>), CC0-1.0</li>
+          <li>Exported to ONNX with exact reformulation of the frequency constraint</li>
+        </ul>
+        <h4>Data</h4>
         <ul>
           <li>Contains modified Copernicus Sentinel data</li>
           <li>Live scenes: Sentinel-2 COGs on AWS via Element 84 Earth Search</li>
-          <li>Presets: Microsoft Planetary Computer</li>
-          <li>Baseline network: SEN2SR-Lite (ESA OpenSR)</li>
-          <li>Earth textures: NASA Blue Marble via three.js</li>
+          <li>Study areas: Microsoft Planetary Computer</li>
         </ul>
       </div>
       <div>
-        <h4>Project</h4>
+        <h4>Maps &amp; search</h4>
         <ul>
-          <li><a href="https://github.com/UchihaDZoro/Deep-Learning-Super-Resolution-Mapping">Source code on GitHub</a></li>
-          <li><a href="#lab">Live Lab</a></li>
-          <li><a href="#trust">Validation metrics</a></li>
+          <li>Place search: Photon, © OpenStreetMap contributors</li>
+          <li>Basemap: Esri World Imagery (navigation only)</li>
+          <li>Globe textures: NASA Blue Marble via three.js</li>
+        </ul>
+        <h4>Sections</h4>
+        <ul class="foot-links">
+          <li><a href="#lab">Live Lab</a></li><li><a href="#results">Results</a></li><li><a href="#trust">Validation</a></li>
         </ul>
       </div>
     </div>
-    <div class="fine">Super-resolution reconstructs plausible detail. It does not replace very-high-resolution acquisition, which is why every output carries a trust map.</div>
+    <div class="fine">Super-resolution reconstructs plausible detail from learned priors. It does not replace very-high-resolution acquisition, which is why every product carries an uncertainty map.</div>
   </div>
 </footer>
 

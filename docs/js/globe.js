@@ -108,13 +108,54 @@ const atmo = new THREE.Mesh(
 );
 world.add(atmo);
 
-// ---------------------------------------------------------------- stars
-function starfield(count, rMin, rMax, size) {
+// ---------------------------------------------------------------- sky: nebula sphere, Milky Way, stars, meteors
+// The galactic plane is a tilted great circle; stars and nebulosity concentrate along it.
+const GAL = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0.18, 0, 0.52));
+function galacticDir(band) {                      // band: 0 = isotropic, 1 = tightly in the plane
+  const th = Math.random() * Math.PI * 2;
+  let lat = Math.asin(Math.random() * 2 - 1);
+  if (band > 0) lat *= Math.pow(Math.random(), 2.2 * band) * 0.55;
+  return new THREE.Vector3(Math.cos(lat) * Math.cos(th), Math.sin(lat), Math.cos(lat) * Math.sin(th)).applyMatrix4(GAL);
+}
+
+function nebulaTexture() {
+  const w = 2048, h = 1024, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+  const blob = (x, y, r, rgb, a) => {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  };
+  // band along the equator of the texture (the mesh is rotated into the galactic frame)
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random() * w, off = (Math.random() - 0.5) * Math.random() * 260;
+    const core = Math.exp(-Math.pow((x / w - 0.62) * 3.2, 2));          // brighter towards the "core"
+    const pal = Math.random();
+    const rgb = pal < 0.6 ? '110,140,235' : pal < 0.85 ? '140,125,220' : '235,200,160';
+    blob(x, h / 2 + off, 30 + Math.random() * 120, rgb, (0.03 + 0.085 * core) * Math.random());
+  }
+  // dark dust lanes
+  g.globalCompositeOperation = 'multiply';
+  for (let i = 0; i < 260; i++) {
+    const x = Math.random() * w, y = h / 2 + (Math.random() - 0.5) * 70;
+    const r = 20 + Math.random() * 70, gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const sky = new THREE.Mesh(new THREE.SphereGeometry(190, 64, 32),
+  new THREE.MeshBasicMaterial({ map: nebulaTexture(), side: THREE.BackSide, transparent: true, opacity: 0.55, depthWrite: false }));
+sky.matrixAutoUpdate = false; sky.matrix.copy(GAL); sky.matrixWorldNeedsUpdate = true;
+scene.add(sky);
+
+function starfield(count, rMin, rMax, size, band = 0) {
   const pos = new Float32Array(count * 3), sz = new Float32Array(count), tw = new Float32Array(count), col = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = rMin + Math.random() * (rMax - rMin);
-    const s = Math.sqrt(1 - u * u);
-    pos.set([r * s * Math.cos(th), r * u, r * s * Math.sin(th)], i * 3);
+    const d = galacticDir(band), r = rMin + Math.random() * (rMax - rMin);
+    pos.set([d.x * r, d.y * r, d.z * r], i * 3);
     sz[i] = size * (0.4 + Math.pow(Math.random(), 3) * 2.2);
     tw[i] = Math.random() * 6.28;
     const warm = Math.random();
@@ -141,9 +182,46 @@ function starfield(count, rMin, rMax, size) {
   });
   return new THREE.Points(g, m);
 }
-const stars = starfield(5000, 60, 160, 2.2);
-const dust = starfield(700, 12, 40, 1.2);
-scene.add(stars, dust);
+const stars = starfield(4200, 70, 170, 2.1);            // isotropic field
+const milky = starfield(9000, 90, 180, 1.35, 1);         // dense, faint band
+const dust = starfield(600, 14, 45, 1.1);                 // near layer for parallax
+scene.add(stars, milky, dust);
+
+// meteors: one streak every few seconds, far behind the globe
+const METEOR_N = 24, meteorPos = new Float32Array(METEOR_N * 3), meteorA = new Float32Array(METEOR_N);
+for (let i = 0; i < METEOR_N; i++) meteorA[i] = 1 - i / (METEOR_N - 1);
+const meteorG = new THREE.BufferGeometry();
+meteorG.setAttribute('position', new THREE.BufferAttribute(meteorPos, 3));
+meteorG.setAttribute('a', new THREE.BufferAttribute(meteorA, 1));
+const meteorMat = new THREE.ShaderMaterial({
+  uniforms: { fade: { value: 0 } },
+  vertexShader: 'attribute float a; varying float vA; void main(){ vA=a; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader: 'uniform float fade; varying float vA; void main(){ gl_FragColor = vec4(0.85,0.93,1.0, vA*vA*fade); }',
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+});
+const meteor = new THREE.Line(meteorG, meteorMat);
+meteor.frustumCulled = false;
+scene.add(meteor);
+let meteorT = -1, meteorNext = 3, meteorFrom = new THREE.Vector3(), meteorDir = new THREE.Vector3();
+function spawnMeteor() {
+  meteorFrom.set((Math.random() - 0.2) * 70, 18 + Math.random() * 22, -60 - Math.random() * 30);
+  meteorDir.set(-0.6 - Math.random() * 0.5, -0.35 - Math.random() * 0.3, 0).normalize();
+  meteorT = 0;
+}
+function updateMeteor(dt) {
+  meteorNext -= dt;
+  if (meteorT < 0 && meteorNext <= 0 && !reduced) spawnMeteor();
+  if (meteorT < 0) { meteorMat.uniforms.fade.value = 0; return; }
+  meteorT += dt;
+  const life = 1.1, head = meteorT * 55;
+  for (let i = 0; i < METEOR_N; i++) {
+    const d = Math.max(0, head - i * 0.9);
+    meteorPos.set([meteorFrom.x + meteorDir.x * d, meteorFrom.y + meteorDir.y * d, meteorFrom.z], i * 3);
+  }
+  meteorG.attributes.position.needsUpdate = true;
+  meteorMat.uniforms.fade.value = Math.sin(Math.min(1, meteorT / life) * Math.PI) * 0.9;
+  if (meteorT > life) { meteorT = -1; meteorNext = 4 + Math.random() * 7; }
+}
 
 // ---------------------------------------------------------------- Sentinel-2 orbit
 // Sun-synchronous, 786 km altitude, 98.62 deg inclination (inertial frame; Earth spins beneath).
@@ -273,8 +351,8 @@ function tick() {
   const s = smooth(0, 1.1, scrollP), s2 = smooth(1.1, 3.5, scrollP);
   const baseX = mobile ? 0 : 1.15, baseY = mobile ? 0.72 : 0;
   world.position.set(
-    THREE.MathUtils.lerp(baseX, mobile ? 0 : 2.3, s) + s2 * 0.8,
-    THREE.MathUtils.lerp(baseY, mobile ? 1.3 : 0.35, s),
+    THREE.MathUtils.lerp(baseX, mobile ? 0 : 2.3, s) + s2 * 3.2,
+    THREE.MathUtils.lerp(baseY, mobile ? 1.3 : 0.35, s) + s2 * 0.9,
     THREE.MathUtils.lerp(0, -2.6, s) - s2 * 2.5
   );
   const sc = mobile ? 0.78 : 1; world.scale.setScalar(sc);
@@ -311,8 +389,11 @@ function tick() {
   camera.position.y += (-my * 0.18 - camera.position.y) * 0.04;
   camera.lookAt(0, 0, -1);
   stars.rotation.y = t * 0.004 + scrollP * 0.05;
+  milky.rotation.y = stars.rotation.y;
+  sky.matrix.copy(new THREE.Matrix4().makeRotationY(stars.rotation.y).multiply(GAL)); sky.matrixWorldNeedsUpdate = true;
   dust.rotation.y = -t * 0.01 - scrollP * 0.12;
-  stars.material.uniforms.t.value = t; dust.material.uniforms.t.value = t;
+  stars.material.uniforms.t.value = t; milky.material.uniforms.t.value = t; dust.material.uniforms.t.value = t;
+  updateMeteor(dt);
 
   // HTML pins
   camera.getWorldDirection(camDir);

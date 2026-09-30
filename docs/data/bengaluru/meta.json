@@ -1,10 +1,10 @@
 {
   "id": "bengaluru",
-  "name": "Bengaluru \u2014 dense urban",
+  "name": "Bengaluru, Karnataka",
   "lat": 12.9716,
   "lon": 77.5946,
   "dates": "2024-01-01/2024-03-31",
-  "use": "Urban mapping: small buildings, narrow roads",
+  "use": "Dense urban core around Cubbon Park. Tests recovery of individual buildings, stadiums and narrow streets.",
   "scene": "S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334",
   "date": "2024-03-13",
   "cloud": 0.0,
