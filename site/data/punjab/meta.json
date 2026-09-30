@@ -1,0 +1,24 @@
+{
+  "id": "punjab",
+  "name": "Ludhiana, Punjab \u2014 smallholder farms",
+  "lat": 30.87,
+  "lon": 75.79,
+  "dates": "2024-02-01/2024-03-31",
+  "use": "Crop monitoring: field boundaries, NDVI at 2.5 m",
+  "scene": "S2B_MSIL2A_20240312T053639_R005_T43REQ_20240312T104004",
+  "date": "2024-03-12",
+  "cloud": 0.0,
+  "crs": "EPSG:32643",
+  "extent_km": 2.56,
+  "metrics": {
+    "consistency_psnr_db": 35.65,
+    "consistency_mae": 0.00964,
+    "spectral_angle_deg": 2.777,
+    "ndvi_mae": 0.0089,
+    "ndvi_mean_in": 0.415,
+    "ndvi_mean_sr": 0.416,
+    "sharpness_gain_vs_bicubic": 1.21,
+    "mean_uncertainty": 0.00129,
+    "high_uncertainty_pct": 0.19
+  }
+}

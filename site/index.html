@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRINETRA-SR · Trustworthy Sentinel-2 Super-Resolution</title>
+<meta name="description" content="Prototype v1: Sentinel-2 10 m to 2.5 m super-resolution with per-pixel uncertainty and radiometric consistency checks. SIH PS 26142 (NTRO).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f17; --panel:#121826; --panel2:#182033; --line:#243049;
+  --text:#e6ebf5; --muted:#8e9ab3; --accent:#ff9933; --accent2:#3ec7a6; --warn:#ff5d5d;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;line-height:1.5}
+a{color:var(--accent2)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101727,#0b0f17)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:10px;background:conic-gradient(from 200deg,var(--accent),#fff 30%,var(--accent2) 60%,var(--accent));display:grid;place-items:center}
+.logo::after{content:"";width:14px;height:14px;border-radius:50%;background:var(--bg);box-shadow:0 0 0 3px #0b0f17aa}
+.brand h1{font-size:18px;margin:0;letter-spacing:.3px}
+.brand small{display:block;color:var(--muted);font-size:12px}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:99px;color:var(--muted)}
+.hero{padding:28px 0 8px}
+.hero h2{font-size:clamp(22px,3.2vw,34px);margin:0 0 8px;line-height:1.2}
+.hero h2 span{color:var(--accent)}
+.hero p{color:var(--muted);max-width:820px;margin:0}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;padding:22px 0}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+.aois{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.aoi-btn{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;font:500 13px Inter}
+.aoi-btn.on{border-color:var(--accent);background:#2a1d10}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.seg{display:flex;background:var(--panel2);border-radius:10px;padding:3px;border:1px solid var(--line)}
+.seg button{background:none;border:0;color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer;font:500 12.5px Inter}
+.seg button.on{background:var(--accent);color:#1a1005}
+label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+input[type=range]{accent-color:var(--accent)}
+.viewer{position:relative;aspect-ratio:1/1;overflow:hidden;background:#000;border-radius:0 0 var(--radius) var(--radius);cursor:grab;touch-action:none;user-select:none}
+.viewer.dragging{cursor:grabbing}
+.layer{position:absolute;inset:0;overflow:hidden}
+.layer img{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:0 0;image-rendering:auto;pointer-events:none}
+.layer img.px{image-rendering:pixelated}
+.divider{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #000;transform:translateX(-1px)}
+.handle{position:absolute;top:50%;left:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-weight:700;cursor:ew-resize;box-shadow:0 2px 10px #0008}
+.lbl{position:absolute;top:10px;padding:4px 10px;border-radius:8px;background:#000b;font-size:12px;font-weight:600;pointer-events:none}
+.lbl.l{left:10px}.lbl.r{right:10px;color:var(--accent)}
+.zoomctl{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px}
+.zoomctl button{width:34px;height:34px;border-radius:9px;border:1px solid #fff3;background:#000b;color:#fff;font-size:18px;cursor:pointer}
+.scalebar{position:absolute;left:10px;bottom:12px;font:500 11px 'JetBrains Mono';color:#fff;text-shadow:0 1px 2px #000}
+.scalebar div{height:5px;border:2px solid #fff;border-top:0;margin-top:2px}
+.legend{position:absolute;left:10px;bottom:44px;background:#000b;padding:6px 8px;border-radius:8px;font-size:11px;display:none}
+.legend .bar{width:140px;height:8px;border-radius:4px;background:linear-gradient(90deg,#000004,#57106e,#bc3754,#f98e09,#fcffa4)}
+.legend .ndvi{background:linear-gradient(90deg,#a50026,#f46d43,#fee08b,#d9ef8b,#66bd63,#006837)}
+.legend .ticks{display:flex;justify-content:space-between;color:var(--muted)}
+.hint{font-size:12px;color:var(--muted);padding:8px 12px}
+.side{display:flex;flex-direction:column;gap:16px}
+.side .card{padding:16px}
+.side h3{margin:0 0 4px;font-size:15px}
+.side .sub{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
+.kv span:nth-child(odd){color:var(--muted)}
+.kv b{font-family:'JetBrains Mono';font-weight:500}
+.metric{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px dashed var(--line)}
+.metric:first-of-type{border-top:0}
+.metric .n{font-size:13px}
+.metric .n small{display:block;color:var(--muted);font-size:11.5px}
+.metric .v{font:600 16px 'JetBrains Mono'}
+.ok{color:var(--accent2)} .mid{color:var(--accent)}
+.section{padding:28px 0;border-top:1px solid var(--line)}
+.section h2{font-size:22px;margin:0 0 14px}
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media (max-width:900px){.pipe{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.pipe{grid-template-columns:1fr}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;position:relative}
+.step .no{font:600 11px 'JetBrains Mono';color:var(--accent)}
+.step h4{margin:4px 0 6px;font-size:14px}
+.step p{margin:0;color:var(--muted);font-size:12.5px}
+.step.v2{border-style:dashed;opacity:.85}
+.usp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:900px){.usp{grid-template-columns:1fr}}
+.usp div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.usp h4{margin:0 0 6px;font-size:14px}
+.usp p{margin:0;color:var(--muted);font-size:13px}
+.pill{font:600 10px Inter;letter-spacing:.5px;padding:2px 7px;border-radius:99px;background:#3ec7a622;color:var(--accent2);margin-left:6px;vertical-align:middle}
+.pill.next{background:#ff993322;color:var(--accent)}
+footer{color:var(--muted);font-size:12.5px;padding:24px 0 40px;border-top:1px solid var(--line)}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px;background:#000a}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div><h1>TRINETRA-SR</h1><small>Trustworthy Super-Resolution for Sentinel-2</small></div>
+    </div>
+    <div class="tags">
+      <span class="tag">SIH · PS 26142</span><span class="tag">NTRO</span><span class="tag">Space Technology</span><span class="tag">Prototype v1</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h2>Sentinel-2 <span>10 m → 2.5 m</span>, with a trust map for every pixel.</h2>
+    <p>Real Sentinel-2 L2A scenes over India, super-resolved 4× with a radiometry-preserving deep network. Every output comes with a per-pixel uncertainty map and a consistency check, so analysts can tell <b>observed</b> detail from <b>inferred</b> detail.</p>
+  </section>
+
+  <div class="grid">
+    <div>
+      <div class="aois" id="aois"></div>
+      <div class="card">
+        <div class="toolbar">
+          <div class="seg" id="mode">
+            <button data-m="sr" class="on">vs Sentinel-2 10 m</button>
+            <button data-m="bic">vs Bicubic</button>
+            <button data-m="ndvi">NDVI 10 m vs 2.5 m</button>
+          </div>
+          <label class="chk"><input type="checkbox" id="unc"> Uncertainty overlay</label>
+          <input type="range" id="uncop" min="0" max="100" value="80" title="Overlay opacity" style="width:90px">
+        </div>
+        <div class="viewer" id="viewer">
+          <div class="layer" id="L"><img id="imgL" class="px" alt="Left image"></div>
+          <div class="layer" id="R"><img id="imgR" alt="Right image"><img id="imgU" alt="Uncertainty" style="display:none"></div>
+          <div class="divider" id="div"><div class="handle" id="handle">⇆</div></div>
+          <div class="lbl l" id="lblL">Sentinel-2 · 10 m</div>
+          <div class="lbl r" id="lblR">TRINETRA-SR · 2.5 m</div>
+          <div class="legend" id="legend"><div id="legT" style="margin-bottom:3px">Uncertainty (σ reflectance)</div><div class="bar" id="legBar"></div><div class="ticks"><span id="leg0">0</span><span id="leg1">≥0.02</span></div></div>
+          <div class="scalebar" id="scalebar"><span id="sbl">500 m</span><div id="sbw" style="width:80px"></div></div>
+          <div class="zoomctl"><button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button><button id="zreset" title="Reset" style="font-size:13px">⤢</button></div>
+          <div class="loading" id="loading">Loading…</div>
+        </div>
+      </div>
+      <div class="hint">Drag the white handle to compare · scroll or use +/− to zoom · drag the image to pan. Zoom in on roads, rooftops and field bunds to see the difference.</div>
+    </div>
+
+    <aside class="side">
+      <div class="card">
+        <h3 id="aoiName">—</h3>
+        <div class="sub" id="aoiUse"></div>
+        <div class="kv" id="aoiMeta"></div>
+      </div>
+      <div class="card">
+        <h3>Trust &amp; consistency metrics</h3>
+        <div class="sub">Computed automatically for this scene. The SR output is degraded back to 10 m and compared with the real Sentinel-2 input.</div>
+        <div id="metrics"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="section">
+    <h2>Pipeline</h2>
+    <div class="pipe">
+      <div class="step"><div class="no">01</div><h4>Acquire</h4><p>STAC search for Sentinel-2 L2A over the AOI. Clearest scene picked with the SCL cloud mask. Baseline-04 harmonisation.</p></div>
+      <div class="step"><div class="no">02</div><h4>Pre-process</h4><p>10 bands (10 m + 20 m) stacked on the 10 m grid and scaled to reflectance. Tiled with overlap.</p></div>
+      <div class="step"><div class="no">03</div><h4>Super-resolve</h4><p>Lightweight network with a low-frequency hard constraint → 2.5 m output with radiometry preserved.</p></div>
+      <div class="step"><div class="no">04</div><h4>Trust layer</h4><p>8-fold dihedral ensemble → per-pixel σ. Consistency, spectral-angle and NDVI checks.</p></div>
+      <div class="step"><div class="no">05</div><h4>Deliver</h4><p>2.5 m GeoTIFF (same CRS) + uncertainty band + metrics → web viewer / GIS.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>What makes it different</h2>
+    <div class="usp">
+      <div><h4>Per-pixel trust map <span class="pill">LIVE</span></h4><p>Every 2.5 m product ships with an uncertainty band that flags where detail is inferred rather than observed. v2: conformal calibration with guaranteed coverage.</p></div>
+      <div><h4>Physics-consistent radiometry <span class="pill">LIVE</span></h4><p>Degrade the output back to 10 m and it matches the input. NDVI and other indices stay scientifically valid.</p></div>
+      <div><h4>All-band 2.5 m <span class="pill">LIVE</span></h4><p>Red-edge and SWIR are sharpened too, not just RGB. That gives NDVI, NDRE, NDWI and NBR at 2.5 m for crops, water and burn scars.</p></div>
+      <div><h4>Multi-temporal fusion <span class="pill next">v2</span></h4><p>Fuse several 5-day revisits so extra detail is partly observed (sub-pixel shifts), not only imagined.</p></div>
+      <div><h4>Fidelity ↔ Detail dial <span class="pill next">v2</span></h4><p>Deterministic fidelity mode for analysts, plus a diffusion refiner for detail. Blend them live and watch the uncertainty update.</p></div>
+      <div><h4>Task-level validation <span class="pill next">v2</span></h4><p>Buildings, roads, field boundaries and flood/landslide change detection on an India validation set, plus a phantom-object hallucination audit.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    Prototype v1 for Smart India Hackathon · PS 26142 (NTRO): Deep Learning Based Super Resolution Mapping from Medium Resolution Satellite Imagery.<br>
+    Contains modified Copernicus Sentinel data (processed via Microsoft Planetary Computer). v1 inference engine: SEN2SR-Lite (ESA OpenSR, CC-BY) used as the baseline network. The trust layer, consistency checks and pipeline are our own work.
+  </footer>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { aois: [], cur: null, mode: 'sr', pos: 50, z: 1, tx: 0, ty: 0 };
+const viewer = $('#viewer'), imgL = $('#imgL'), imgR = $('#imgR'), imgU = $('#imgU');
+
+const fmtMetrics = m => [
+  ['Consistency PSNR · 10 m bands', 'SR degraded to 10 m vs real input (B2 B3 B4 B8)', m.consistency_psnr_db + ' dB', m.consistency_psnr_db > 40 ? 'ok' : 'mid'],
+  ['Consistency PSNR · 20 m bands', 'SR degraded to 20 m vs real input (RE, SWIR)', m.consistency_psnr_20m_db + ' dB', m.consistency_psnr_20m_db > 35 ? 'ok' : 'mid'],
+  ['Spectral angle (SAM)', 'Spectral distortion, 10 m bands', m.spectral_angle_deg + '°', m.spectral_angle_deg < 1.5 ? 'ok' : 'mid'],
+  ['NDVI deviation', 'Mean |ΔNDVI| after degradation', m.ndvi_mae, m.ndvi_mae < 0.02 ? 'ok' : 'mid'],
+  ['Sharpness gain', 'Edge energy vs bicubic', m.sharpness_gain_vs_bicubic + '×', m.sharpness_gain_vs_bicubic > 1.1 ? 'ok' : 'mid'],
+  ['Mean uncertainty', 'Mean σ of RGB reflectance', m.mean_uncertainty, 'mid'],
+  ['High-uncertainty area', 'Pixels flagged σ > 0.01', m.high_uncertainty_pct + ' %', m.high_uncertainty_pct < 5 ? 'ok' : 'mid'],
+].map(([n, s, v, c]) => `<div class="metric"><div class="n">${n}<small>${s}</small></div><div class="v ${c}">${v}</div></div>`).join('');
+
+function render() {
+  const t = `translate(${state.tx}px,${state.ty}px) scale(${state.z})`;
+  [imgL, imgR, imgU].forEach(i => i.style.transform = t);
+  $('#R').style.clipPath = `inset(0 0 0 ${state.pos}%)`;
+  $('#div').style.left = state.pos + '%';
+  // scale bar: image is extent_km wide at z=1
+  if (state.cur) {
+    const pxPerM = viewer.clientWidth * state.z / (state.cur.extent_km * 1000);
+    const nice = [10, 20, 50, 100, 200, 500, 1000].find(m => m * pxPerM > 60) || 1000;
+    $('#sbw').style.width = (nice * pxPerM) + 'px';
+    $('#sbl').textContent = nice >= 1000 ? nice / 1000 + ' km' : nice + ' m';
+  }
+}
+
+function setImages() {
+  const d = `data/${state.cur.id}/`;
+  $('#loading').style.display = 'grid';
+  const m = state.mode;
+  const L = m === 'sr' ? 'input.jpg' : m === 'bic' ? 'bicubic.jpg' : 'ndvi_input.jpg';
+  const R = m === 'ndvi' ? 'ndvi_sr.jpg' : 'sr.jpg';
+  imgL.className = (m === 'bic') ? '' : 'px';
+  $('#lblL').textContent = m === 'sr' ? 'Sentinel-2 · 10 m (native pixels)' : m === 'bic' ? 'Bicubic upsampling · 2.5 m' : 'NDVI · 10 m';
+  $('#lblR').textContent = m === 'ndvi' ? 'NDVI · 2.5 m (TRINETRA-SR)' : 'TRINETRA-SR · 2.5 m';
+  let n = 0; const done = () => { if (++n === 2) $('#loading').style.display = 'none'; };
+  imgL.onload = imgR.onload = done; imgL.onerror = imgR.onerror = done;
+  imgL.src = d + L; imgR.src = d + R; imgU.src = d + 'uncertainty.png';
+  updateLegend();
+}
+
+function updateLegend() {
+  const u = $('#unc').checked, nd = state.mode === 'ndvi';
+  imgU.style.display = u ? 'block' : 'none';
+  imgU.style.opacity = $('#uncop').value / 100;
+  $('#legend').style.display = (u || nd) ? 'block' : 'none';
+  if (u) { $('#legT').textContent = 'Uncertainty (σ reflectance)'; $('#legBar').className = 'bar'; $('#leg0').textContent = '0'; $('#leg1').textContent = '≥0.02'; }
+  else if (nd) { $('#legT').textContent = 'NDVI'; $('#legBar').className = 'bar ndvi'; $('#leg0').textContent = '−0.1'; $('#leg1').textContent = '0.8'; }
+}
+
+function selectAoi(a) {
+  state.cur = a; state.z = 1; state.tx = state.ty = 0;
+  document.querySelectorAll('.aoi-btn').forEach(b => b.classList.toggle('on', b.dataset.id === a.id));
+  $('#aoiName').textContent = a.name;
+  $('#aoiUse').textContent = a.use;
+  $('#aoiMeta').innerHTML = [
+    ['Acquired', a.date], ['Scene cloud', a.cloud + ' %'], ['Extent', `${a.extent_km} × ${a.extent_km} km`],
+    ['Input / output', '10 m → 2.5 m'], ['Bands', '10 (VNIR + RE + SWIR)'], ['CRS', a.crs],
+    ['Centre', `${a.lat.toFixed(4)}, ${a.lon.toFixed(4)}`],
+  ].map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join('');
+  $('#metrics').innerHTML = fmtMetrics(a.metrics);
+  setImages(); render();
+}
+
+// zoom / pan / divider
+function zoomAt(f, cx, cy) {
+  const nz = Math.min(12, Math.max(1, state.z * f));
+  state.tx = cx - (cx - state.tx) * nz / state.z;
+  state.ty = cy - (cy - state.ty) * nz / state.z;
+  state.z = nz; clamp(); render();
+}
+function clamp() {
+  const w = viewer.clientWidth, h = viewer.clientHeight;
+  state.tx = Math.min(0, Math.max(w - w * state.z, state.tx));
+  state.ty = Math.min(0, Math.max(h - h * state.z, state.ty));
+}
+viewer.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = viewer.getBoundingClientRect();
+  zoomAt(e.deltaY < 0 ? 1.25 : 0.8, e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+let drag = null;
+viewer.addEventListener('pointerdown', e => {
+  drag = { kind: e.target.closest('#handle') ? 'div' : 'pan', x: e.clientX, y: e.clientY, tx: state.tx, ty: state.ty };
+  viewer.setPointerCapture(e.pointerId);
+  if (drag.kind === 'pan') viewer.classList.add('dragging');
+});
+viewer.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const r = viewer.getBoundingClientRect();
+  if (drag.kind === 'div') state.pos = Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100));
+  else { state.tx = drag.tx + e.clientX - drag.x; state.ty = drag.ty + e.clientY - drag.y; clamp(); }
+  render();
+});
+const end = () => { drag = null; viewer.classList.remove('dragging'); };
+viewer.addEventListener('pointerup', end); viewer.addEventListener('pointercancel', end);
+const mid = () => [viewer.clientWidth / 2, viewer.clientHeight / 2];
+$('#zin').onclick = e => { e.stopPropagation(); zoomAt(1.6, ...mid()); };
+$('#zout').onclick = e => { e.stopPropagation(); zoomAt(1 / 1.6, ...mid()); };
+$('#zreset').onclick = e => { e.stopPropagation(); state.z = 1; state.tx = state.ty = 0; render(); };
+['zin', 'zout', 'zreset'].forEach(id => $('#' + id).addEventListener('pointerdown', e => e.stopPropagation()));
+window.addEventListener('resize', () => { clamp(); render(); });
+
+$('#mode').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.mode = b.dataset.m;
+  document.querySelectorAll('#mode button').forEach(x => x.classList.toggle('on', x === b));
+  setImages();
+};
+$('#unc').onchange = updateLegend; $('#uncop').oninput = updateLegend;
+
+fetch('data/index.json').then(r => r.json()).then(list => {
+  state.aois = list;
+  $('#aois').innerHTML = list.map(a => `<button class="aoi-btn" data-id="${a.id}">${a.name}</button>`).join('');
+  $('#aois').onclick = e => { const b = e.target.closest('.aoi-btn'); if (b) selectAoi(list.find(a => a.id === b.dataset.id)); };
+  if (list.length) selectAoi(list[0]);
+}).catch(() => { $('#loading').textContent = 'No data found. Run prototype/run_sr.py first.'; });
+</script>
+</body>
+</html>

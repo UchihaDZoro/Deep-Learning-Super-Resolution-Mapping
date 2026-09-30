@@ -1,0 +1,24 @@
+{
+  "id": "bengaluru",
+  "name": "Bengaluru \u2014 dense urban",
+  "lat": 12.9716,
+  "lon": 77.5946,
+  "dates": "2024-01-01/2024-03-31",
+  "use": "Urban mapping: small buildings, narrow roads",
+  "scene": "S2B_MSIL2A_20240313T050649_R019_T43PGQ_20240313T171334",
+  "date": "2024-03-13",
+  "cloud": 0.0,
+  "crs": "EPSG:32643",
+  "extent_km": 2.56,
+  "metrics": {
+    "consistency_psnr_db": 34.24,
+    "consistency_mae": 0.01152,
+    "spectral_angle_deg": 3.25,
+    "ndvi_mae": 0.0082,
+    "ndvi_mean_in": 0.323,
+    "ndvi_mean_sr": 0.323,
+    "sharpness_gain_vs_bicubic": 1.14,
+    "mean_uncertainty": 0.00124,
+    "high_uncertainty_pct": 0.06
+  }
+}
