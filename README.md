@@ -10,7 +10,7 @@ Prototype v1 turns Sentinel-2 L2A imagery at **10 m into 2.5 m** (4×). Every ou
 ```
 prototype/run_sr.py   fetch → super-resolve → uncertainty → metrics → export
 prototype/outputs/    2.5 m GeoTIFFs (SR, uncertainty) + 10 m inputs
-site/                 static web demo (swipe viewer, uncertainty overlay, NDVI, metrics)
+docs/                 static web demo (swipe viewer, uncertainty overlay, NDVI, metrics)
 IMPLEMENTATION_PLAN.md full roadmap (v2: multi-temporal fusion, diffusion refiner, conformal calibration, downstream validation)
 ```
 
@@ -20,7 +20,7 @@ py -3.11 -m venv .venv
 .venv\Scripts\pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 .venv\Scripts\pip install sen2sr mlstac git+https://github.com/ESDS-Leipzig/cubo.git planetary-computer pystac-client rasterio matplotlib pillow
 .venv\Scripts\python prototype\run_sr.py
-cd site && python -m http.server 8000
+cd docs && python -m http.server 8000
 ```
 
 ## Credits

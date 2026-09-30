@@ -11,14 +11,16 @@
   "crs": "EPSG:32643",
   "extent_km": 2.56,
   "metrics": {
-    "consistency_psnr_db": 35.65,
-    "consistency_mae": 0.00964,
-    "spectral_angle_deg": 2.777,
+    "consistency_psnr_db": 49.15,
+    "consistency_psnr_20m_db": 36.0,
+    "consistency_mae": 0.00238,
+    "spectral_angle_deg": 0.616,
+    "spectral_angle_20m_deg": 1.872,
     "ndvi_mae": 0.0089,
     "ndvi_mean_in": 0.415,
     "ndvi_mean_sr": 0.416,
     "sharpness_gain_vs_bicubic": 1.21,
-    "mean_uncertainty": 0.00129,
+    "mean_uncertainty": 0.00124,
     "high_uncertainty_pct": 0.19
   }
 }

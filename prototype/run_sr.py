@@ -29,7 +29,7 @@ import mlstac
 import sen2sr
 
 ROOT = Path(__file__).resolve().parent
-SITE = ROOT.parent / "site"
+SITE = ROOT.parent / "docs"
 OUT = ROOT / "outputs"
 MODEL_DIR = ROOT / "model" / "SEN2SRLite"
 

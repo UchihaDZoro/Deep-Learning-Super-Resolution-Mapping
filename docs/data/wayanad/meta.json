@@ -1,0 +1,26 @@
+{
+  "id": "wayanad",
+  "name": "Wayanad, Kerala \u2014 2024 landslide",
+  "lat": 11.475,
+  "lon": 76.135,
+  "dates": "2024-12-01/2025-03-31",
+  "use": "Disaster assessment: landslide scar & debris path",
+  "scene": "S2C_MSIL2A_20250224T051841_R062_T43PFN_20250224T103411",
+  "date": "2025-02-24",
+  "cloud": 0.0,
+  "crs": "EPSG:32643",
+  "extent_km": 2.56,
+  "metrics": {
+    "consistency_psnr_db": 51.49,
+    "consistency_psnr_20m_db": 35.44,
+    "consistency_mae": 0.00139,
+    "spectral_angle_deg": 0.232,
+    "spectral_angle_20m_deg": 1.51,
+    "ndvi_mae": 0.0033,
+    "ndvi_mean_in": 0.776,
+    "ndvi_mean_sr": 0.776,
+    "sharpness_gain_vs_bicubic": 1.16,
+    "mean_uncertainty": 0.00038,
+    "high_uncertainty_pct": 0.0
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "delhi_yamuna",
+  "name": "Delhi \u2014 Yamuna floodplain",
+  "lat": 28.61,
+  "lon": 77.26,
+  "dates": "2024-10-15/2024-12-31",
+  "use": "Water & infrastructure: bridges, river edges",
+  "scene": "S2A_MSIL2A_20241030T052941_R105_T43RGM_20241030T093050",
+  "date": "2024-10-30",
+  "cloud": 0.0,
+  "crs": "EPSG:32643",
+  "extent_km": 2.56,
+  "metrics": {
+    "consistency_psnr_db": 53.09,
+    "consistency_psnr_20m_db": 38.03,
+    "consistency_mae": 0.00144,
+    "spectral_angle_deg": 0.483,
+    "spectral_angle_20m_deg": 1.69,
+    "ndvi_mae": 0.0062,
+    "ndvi_mean_in": 0.458,
+    "ndvi_mean_sr": 0.458,
+    "sharpness_gain_vs_bicubic": 1.16,
+    "mean_uncertainty": 0.00053,
+    "high_uncertainty_pct": 0.0
+  }
+}
