@@ -391,7 +391,8 @@
     }
     dv.setUint32(p, 0, true);
     new Uint16Array(buf, dataOff).set(img);
-    return URL.createObjectURL(new Blob([buf], { type: 'image/tiff' }));
+    const blob = new Blob([buf], { type: 'image/tiff' });
+    return { url: URL.createObjectURL(blob), bytes: blob.size };
   }
 
   // ------------------------------------------------------------ orchestration
@@ -404,7 +405,6 @@
     await new Promise(r => setTimeout(r, 0));
     const bic = bicubicUp(X, NB, n, SCALE);
     const metrics = computeMetrics(X, sr, bic, std, n);
-    window.__trinetraLast = { X, sr, std, bic, n };   // for inspection from the console
     const rgbIn = pick(X, n, [0, 1, 2]);
     let lo = percentile(rgbIn, 1), hi = percentile(rgbIn, 99); if (hi <= lo) hi = lo + 1e-3;
     const ndIn = ndvi(X, nn), ndInUp = new Float32Array(NN);
@@ -419,14 +419,16 @@
     };
     progress(0.97, 'Writing GeoTIFFs');
     const hr = [scene.origin, scene.res / SCALE, scene.epsg];
-    const downloads = {
+    const files = {
       sr: geotiff(sr, NB, N, ...hr),
       uncertainty: geotiff(std, NB, N, ...hr),
       input: geotiff(X, NB, n, scene.origin, scene.res, scene.epsg),
     };
+    const downloads = {}, sizes = {};
+    for (const k in files) { downloads[k] = files[k].url; sizes[k] = files[k].bytes; }
     return Object.assign({
       id: 'live-' + Date.now(), scene: scene.scene, date: scene.date, cloud: scene.cloud, crs: scene.crs,
-      extent_km: +(n * 10 / 1000).toFixed(2), metrics, urls, downloads, runtime_s: +runtime.toFixed(1), tta, backend,
+      extent_km: +(n * 10 / 1000).toFixed(2), metrics, urls, downloads, sizes, runtime_s: +runtime.toFixed(1), tta, backend,
     }, extra);
   }
 

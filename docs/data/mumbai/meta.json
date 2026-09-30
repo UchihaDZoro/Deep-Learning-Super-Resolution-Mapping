@@ -1,10 +1,10 @@
 {
   "id": "mumbai",
-  "name": "Mumbai \u2014 port & informal settlements",
+  "name": "Mumbai, Maharashtra",
   "lat": 19.04,
   "lon": 72.855,
   "dates": "2024-01-01/2024-03-31",
-  "use": "Urban & coastal: dense settlements, water edges",
+  "use": "Port, rail yards and informal settlements. Tests very dense structures and sharp water edges.",
   "scene": "S2A_MSIL2A_20240206T054021_R005_T42QZG_20240206T091955",
   "date": "2024-02-06",
   "cloud": 0.0,
