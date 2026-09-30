@@ -119,7 +119,7 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs" style="left:52px;top:476px;width:1090px">
     <div style="font:700 22px Inter, Arial, sans-serif;color:var(--blue);margin-bottom:8px">Detailed explanation of the proposed solution</div>
     <ul class="l">
-      <li><b class="b">Input:</b> Sentinel-2 L2A, 10 bands (B2–B8A, B11, B12), picked by cloud-aware archive search or uploaded as a GeoTIFF.</li>
+      <li><b class="b">Input:</b> Sentinel-2 L2A, 10 bands, via cloud-aware search or a GeoTIFF upload.</li>
       <li><b class="b">Model:</b> deep SR backbone + a <b class="b">low-frequency hard constraint</b> (FFT), so it can add detail but never change measured radiometry.</li>
       <li><b class="b">Output:</b> 2.5 m 10-band GeoTIFF, a σ-uncertainty GeoTIFF and validation metrics, in the source UTM grid.</li>
     </ul>
@@ -424,7 +424,7 @@ table.m tr:nth-child(even) td{background:#F6F8FC}
   <div class="abs ptr" style="left:52px;top:170px;font-size:21px"><span class="dia"></span><u>Potential challenges and risks</u> · <u>Strategies for overcoming these challenges</u></div>
   <div class="abs" style="left:52px;top:210px;width:900px">
     <table class="m">
-      <tr><th style="width:250px">Risk</th><th style="width:96px">Level</th><th>Mitigation</th></tr>
+      <tr><th style="width:290px">Risk</th><th style="width:96px">Level</th><th>Mitigation</th></tr>
       <tr><td class="b">Hallucinated detail</td><td><span class="lvl" style="background:var(--rose)">HIGH</span></td><td>FFT hard constraint + σ map; flagged, never hidden</td></tr>
       <tr><td class="b">Domain gap (US-trained)</td><td><span class="lvl" style="background:var(--rose)">HIGH</span></td><td>Fine-tune on Indian references (Cartosat, WorldStrat)</td></tr>
       <tr><td class="b">Clouds &amp; monsoon</td><td><span class="lvl" style="background:var(--saff)">MED</span></td><td>12-month SCL-scored search; multi-date fusion (v2)</td></tr>
