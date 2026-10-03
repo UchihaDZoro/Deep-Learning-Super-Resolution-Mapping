@@ -1,4 +1,4 @@
-"""TRINETRA-SR prototype v1.
+"""TRINETRA-SR batch pipeline (v1).
 
 Fetch cloud-free Sentinel-2 L2A for Indian AOIs, super-resolve 10 m -> 2.5 m,
 estimate per-pixel uncertainty (8-fold dihedral test-time augmentation),

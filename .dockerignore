@@ -1,6 +1,7 @@
 .venv
 .git
 .claude
-prototype/outputs
-prototype/model
+figures
+pipeline/outputs
+pipeline/model
 **/__pycache__
