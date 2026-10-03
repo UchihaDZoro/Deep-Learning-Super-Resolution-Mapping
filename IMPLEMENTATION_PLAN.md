@@ -112,7 +112,7 @@ Interactive 3-D landing page, place search, swipe viewer with zoom, NDVI and unc
 Twelve weeks, six phases. Each phase ends with a measurable deliverable.
 
 | Phase | Goal | Deliverable | Exit criterion |
-|---|---|---|---|---|
+|---|---|---|---|
 | **1 · Data** | Training and reference data | SEN2NAIPv2 + WorldStrat loaders; India reference set (Cartosat tiles requested via NRSC/NTRO, 8–10 AOIs); PSF/MTF degradation model | Data cards; geographically disjoint train/val/test splits |
 | **2 · Fine-tuning** | Adapt the network to Indian landscapes | Fine-tuned backbone (≤ 15 M parameters) with spectral and shift-tolerant losses | Beats v1 on the India reference set without lowering consistency |
 | **3 · Detail** | Recover more real detail | Temporal-attention front-end (4–8 revisits); optional diffusion/flow refiner with a fidelity ↔ detail dial | Higher edge and object recall at equal consistency |
