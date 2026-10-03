@@ -1,291 +1,157 @@
-# PS 26142: Deep Learning Super-Resolution Mapping (SRM) for Sentinel-2
-**Organisation:** NTRO · **Theme:** Space Technology · **Category:** Software
-**Target:** Sentinel-2 at 10 m → **2.5 m** (4×, which beats the <4 m requirement), with spectral and geospatial consistency and a measured uncertainty for every pixel.
+# Approach & Implementation Plan
+
+**TRINETRA-SR · Smart India Hackathon 2026 · PS 26142 (NTRO) · Team Sentinels_W (190286)**
+
+This document records how we approached the problem statement, the decisions we made along the way and why, what prototype v1 delivers today, and how we plan to take it to a validated, deployable system.
+The technical specification is in [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md).
 
 ---
 
-## 1. What the problem is really asking
+## Summary
 
-The PS text makes four demands. A good solution has to meet all four:
+| | |
+|---|---|
+| **Problem** | Sentinel-2 is free and revisits India every 5 days, but its 10 m pixels hide roads, rooftops, field bunds and localised damage. |
+| **Our framing** | Super-resolution is only useful if it stays faithful to the measurement and declares what it inferred. We treat **fidelity**, **detail** and **trust** as three separate engineering requirements. |
+| **What we built (v1)** | A working 10 m → 2.5 m system for all 10 bands, with a frequency-domain consistency constraint, per-pixel uncertainty, automatic validation and GeoTIFF export. It runs entirely in the browser and is live online. |
+| **Evidence** | Across 5 Indian sites: 51.1 dB mean consistency (10 m bands), 36.8 dB (20 m bands), 0.48° spectral angle, NDVI deviation 0.007. |
+| **Next 12 weeks** | Fine-tune on Indian references, add multi-date fusion, calibrate uncertainty with conformal prediction, and benchmark on independent high-resolution data and downstream tasks. |
 
-| Requirement in PS | What it means technically | How judges will test it |
+---
+
+## 1. How we read the problem statement
+
+We broke the PS into four requirements and treated each one as something we would have to *demonstrate*, not just claim.
+
+| PS requirement | What it means technically | How we demonstrate it |
 |---|---|---|
-| "Sharper, information-rich products (<4 m)" | 4× SR of the 10 m bands (B2, B3, B4, B8). Also bring the 20 m bands (B5–B7, B8A, B11, B12) up to the same grid. | Before/after visuals. Can you see small buildings, narrow roads and field bunds? |
-| "Preserving geospatial and spectral consistency" | The SR output, degraded back to 10 m, must match the input. Georeferencing and reflectance values must stay intact, so it's not "just pretty". | Spectral metrics (SAM, ERGAS), NDVI before vs after, GeoTIFF alignment |
-| "Clearly manage uncertainty… details are inferred" | Give an uncertainty / hallucination map for every pixel along with the image | "How do I know this building is real?" |
-| "Validation against high-resolution references" + applications | Accuracy assessment on real cross-sensor pairs, plus gains on downstream tasks (crops, urban, disaster) | Numbers table + application demos |
+| "Sharper, information-rich products (< 4 m)" | 4× SR of Sentinel-2: 10 m → 2.5 m, across all bands, not only RGB | Side-by-side comparison against the 10 m input and bicubic upsampling |
+| "Preserve geospatial and spectral consistency" | Output stays in the source map grid, and degrading it back to 10 m reproduces the measured reflectance | GeoTIFF in the original UTM CRS; PSNR, spectral angle and NDVI checks at native resolution |
+| "Clearly manage uncertainty" | Reconstructed detail is inferred, not observed, so the product must say where it is unsure | Per-pixel uncertainty layer shipped with every product |
+| "Validate against high-resolution references" | Quantitative accuracy assessment, and evidence that SR helps real applications | v1: automatic self-consistency. v2: cross-sensor benchmarks and task-level tests |
 
-The YouTube video makes one point that sets the tone: SR "doesn't unveil hidden data". **Most teams will ignore this. We will build our whole pitch around it: *trustworthy* SR.**
-
----
-
-## 2. State of the art (research summary, 2024–2026)
-
-**Datasets (paired LR–HR):**
-- **SEN2NAIPv2**: Sentinel-2 L2A ↔ NAIP aerial (USA), 2.5 m targets. It has 2,851 real cross-sensor pairs plus ~17.6k synthetic pairs built with a learned S2-like degradation model. It's on HuggingFace (`tacofoundation/SEN2NAIPv2`). This is the main training source.
-- **WorldStrat**: multi-temporal Sentinel-2 stacks ↔ SPOT 6/7 (1.5 m pan / 6 m MS), **globally distributed**, so it gives better geographic diversity than NAIP. Check how many tiles fall in or near India.
-- **MuS2**: real-world benchmark for multi-image S2 SR (WorldView-2 references).
-- **OpenSR-test** (ESA): a benchmark of 5 carefully co-registered datasets. It has consistency, synthesis and hallucination metrics as a Python package (`opensr-test`). **Use it for reporting. It's the credibility anchor.**
-- **CloudSEN12**: cloud-free S2 scenes. SEN2SR used it for SWIR/red-edge training.
-
-**Models:**
-- **SEN2SR (ESA OpenSR, RSE 2025)**: CNN, Swin and Mamba networks with a *low-frequency hard-constraint layer* that forces SR outputs to keep the original low-frequency content, which guarantees radiometric consistency. Main finding: models with more than ~15 M parameters were **not** better, and Mamba beat CNN. This matters for us because small models are fine and we can train them on free GPUs.
-- **LDSR-S2 ("Trustworthy SR with Latent Diffusion", 2025)**: latent diffusion from 10 m to 2.5 m. It is the only model so far that gives a *pixel-wise uncertainty* by drawing several samples.
-- **DiffFuSR (2025)**: diffusion SR of **all 12 bands** to 2.5 m, using fusion for the 20/60 m bands.
-- **Gated dual-conditioning flow matching (2025)**: semantic-guided cross-sensor SR.
-- **Multi-image SR** (HighRes-net, TR-MISR, "Beyond Pretty Pictures" 2025): fuse several revisit dates. The sub-pixel shifts between dates carry *real* extra information, not just learned priors.
-- **GeoSR-Bench (2026)**: finds that gains in PSNR/SSIM **often do not correlate, and can even anti-correlate**, with downstream task performance. So we must evaluate on downstream tasks.
-
-**What nobody has put together yet (our gap):** a single system that combines (a) multi-temporal fusion, (b) a hard radiometric-consistency guarantee, (c) *calibrated* uncertainty with a statistical guarantee, (d) India-specific validation and (e) task-level proof, delivered as a GIS-ready tool that runs air-gapped.
+The video accompanying the PS makes the point we built around: super-resolution "doesn't unveil hidden data". **Most SR work optimises for images that look sharper. We optimised for images that can be trusted.**
 
 ---
 
-## 3. Proposed solution: **"TRINETRA-SR"** (working name)
-*Trustworthy, Radiometrically-consistent, INdia-validated, Explainable, Temporal, Reliable Aggregated SR*
+## 2. What we learned from the literature
 
-### 3.1 Architecture (three stages)
+Before writing code we reviewed current Sentinel-2 SR research. Five findings shaped the design.
 
-```
- Copernicus / STAC API
-        │  (AOI + date range)
-        ▼
-┌─────────────────────────┐
-│ 1. PRE-PROCESSING       │  L2A BOA reflectance, SCL cloud/shadow mask,
-│                         │  pick best N clear dates, co-registration
-│                         │  (phase correlation / AROSICS), band stacking,
-│                         │  20 m → 10 m alignment, tiling with overlap
-└──────────┬──────────────┘
-           ▼
-┌─────────────────────────┐
-│ 2a. FIDELITY BACKBONE   │  Lightweight Swin/Mamba-style network
-│  (deterministic, fast)  │  Input: 1 or N dates × 10 bands
-│                         │  Temporal attention fusion  → 2.5 m
-│                         │  + Low-Frequency Consistency Layer (hard)
-└──────────┬──────────────┘
-           ▼
-┌─────────────────────────┐
-│ 2b. DETAIL REFINER      │  Residual diffusion / flow-matching
-│  (optional, generative) │  (few steps, e.g. 4–15), predicts only the
-│                         │  high-frequency residual on top of 2a
-│                         │  → K stochastic samples
-└──────────┬──────────────┘
-           ▼
-┌─────────────────────────┐
-│ 3. TRUST LAYER          │  • Per-pixel uncertainty (sample variance
-│                         │    + ensemble/aleatoric head)
-│                         │  • Conformal calibration → guaranteed
-│                         │    prediction intervals (e.g. 90% coverage)
-│                         │  • Hallucination flag map
-│                         │  • Consistency check: ↓(SR) vs input
-└──────────┬──────────────┘
-           ▼
-  Cloud-Optimized GeoTIFF (2.5 m, same CRS) + uncertainty band +
-  hallucination mask + provenance metadata (STAC item) → Web app / QGIS plugin
-```
+| Finding | Source | Design decision |
+|---|---|---|
+| A low-frequency hard constraint guarantees radiometric consistency; models above ~15 M parameters gave no significant gain | SEN2SR (ESA OpenSR, RSE 2025) | Keep the constraint; use a compact network that runs on a laptop |
+| PSNR / SSIM gains often do not translate into downstream-task gains | GeoSR-Bench (2026) | Plan validation on buildings, roads, field boundaries and change detection, not just image metrics |
+| Only one prior S2 SR method reports pixel-wise uncertainty, and it relies on slow diffusion sampling | LDSR-S2 (2025) | Cheap ensemble uncertainty now; diffusion only as an optional refiner later |
+| Real cross-sensor pairs are mis-registered; synthetic pairs are clean but less realistic | SEN2NAIP (Sci. Data 2024) | Pre-train on synthetic pairs, fine-tune on real pairs with a shift-tolerant loss |
+| Multiple revisits carry genuine sub-pixel information | HighRes-net, WorldStrat, MuS2 | Multi-temporal fusion as the main v2 upgrade |
 
-### 3.2 Key design decisions
+---
 
-1. **Two modes on a single "Fidelity ↔ Detail" dial.** Analysts (NTRO use case) need *fidelity mode*: no invented structures, radiometry you can defend. Visual interpretation and demos benefit from *detail mode* (the diffusion refiner). A slider blends the two, and the uncertainty map updates live. This makes the perception–distortion trade-off something the user controls instead of something hidden.
-2. **Hard physics constraint.** The final layer projects the output so that `Downsample_S2-PSF(SR) == Input`. It uses Sentinel-2's real MTF/PSF (Gaussian approximation per band from the ESA spec). Spectral consistency becomes *guaranteed by construction*, not just encouraged by a loss.
-3. **Multi-temporal input (the key technical USP).** Sentinel-2 revisits every 5 days. Fusing 4–8 clear acquisitions from within a few weeks recovers *real* sub-pixel information. We can honestly tell judges: "our extra detail is partly *observed*, not only *imagined*." For a quick, single-date comparison, fall back to a single-image model.
-4. **All 10 bands at 2.5 m.** The 20 m bands (red-edge, SWIR) are sharpened too, guided by the SR'd 10 m bands. This makes NDVI, NDRE, NDWI, MNDWI and NBR available at 2.5 m, which matters for crop monitoring and burn/flood mapping.
-5. **Small models.** Aim for 3–15 M parameters (backed by SEN2SR's findings). They train on Kaggle/Colab GPUs, can be exported to ONNX and run on a laptop GPU. NTRO is likely to value on-prem or air-gapped deployment.
+## 3. How we built v1
 
-### 3.3 Training strategy
+We worked in five stages. Each one ended with something we could run and measure.
 
-| Stage | Data | Loss | Purpose |
+### Stage 1 · Baseline and data pipeline
+- Built a STAC-based acquisition pipeline: search the Sentinel-2 L2A archive, score each candidate scene by the cloud-free fraction of the target window (SCL mask), and read only that window from cloud-optimised GeoTIFFs.
+- Handled the processing-baseline 04.00 reflectance offset so older and newer scenes are radiometrically comparable.
+- Chose **SEN2SR-Lite** (ESA OpenSR, CC0-1.0) as the v1 network. It already encodes the fidelity constraint and covers all 10 bands, which let us spend our effort where the PS puts its emphasis: trust, validation and usability.
+
+### Stage 2 · Trust layer
+- **Uncertainty.** We run the model on the 8 dihedral transforms of each tile (4 rotations × flip), invert them, and take the per-pixel standard deviation. Regions where the model disagrees with itself are flagged.
+- **Self-consistency validation.** Every output is degraded back to each band's *native* grid (10 m and 20 m) and compared with the measurement: PSNR, spectral angle, NDVI deviation, edge-energy gain and the share of high-uncertainty pixels.
+- While validating, we found that the library's tiling routine mis-placed tiles for non-default image sizes (consistency fell to 24.9 dB). We replaced it with our own overlap-blended tiler, which restored about 50 dB at every size. This is exactly the kind of silent failure the validation layer exists to catch.
+
+### Stage 3 · Making it usable by anyone
+- The PS asks for a framework analysts can use, so we built a web application: search any place, choose dates and area, run, compare, download.
+- We first deployed a Python inference server. When free hosting proved unreliable, we moved inference **into the browser**: we exported the model to ONNX, rewriting the FFT constraint and antialiased resampling as exact matrix operations (max deviation from PyTorch: 9 × 10⁻⁷). The result is a 19 MB model that runs on an ordinary laptop with no server, and can be deployed offline on an air-gapped network.
+- The same pipeline also exists as a Python batch tool and as a FastAPI/Docker service for on-premise use.
+
+### Stage 4 · Validation on Indian sites
+We ran the full pipeline on five contrasting areas: Bengaluru (dense urban), Ludhiana (smallholder farmland), Mumbai (port and informal settlement), Wayanad (2024 landslide track) and the Delhi Yamuna floodplain.
+
+| Metric | Mean | Range | Target |
 |---|---|---|---|
-| Pre-train | SEN2NAIPv2 synthetic + WorldStrat, with degradation built by our own S2-PSF + noise + spectral harmonisation | L1 + FFT/frequency loss + SAM spectral loss | Learn textures safely (perfectly aligned) |
-| Fine-tune | SEN2NAIPv2 cross-sensor + WorldStrat real pairs | **Misalignment-tolerant** L1 (search in a ±1–2 px window) + perceptual (LPIPS, light weight) + edge loss | Close the synthetic→real gap |
-| Refiner | Same real pairs, residual target = HR − backbone output | Diffusion / flow-matching objective | Detail mode + uncertainty samples |
-| Domain adaptation | Unlabelled Indian S2 scenes (self-supervised: cycle/degradation consistency) + small Indian HR reference set | Consistency loss | Indian terrain: small irregular fields, dense informal settlements, monsoon haze |
-| Calibration | Held-out real pairs | Split conformal prediction | Calibrated uncertainty |
+| Consistency PSNR, 10 m bands | 51.1 dB | 49.2 – 53.1 | > 40 dB |
+| Consistency PSNR, 20 m bands | 36.8 dB | 34.7 – 40.0 | > 33 dB |
+| Spectral angle (10 m) | 0.48° | 0.23 – 0.62 | < 1.5° |
+| NDVI deviation (MAE) | 0.0066 | 0.003 – 0.009 | < 0.02 |
+| Edge-energy gain vs bicubic | 1.17× | 1.14 – 1.21 | > 1.1× |
+| Pixels flagged as uncertain | 0.05 % | 0 – 0.19 | < 5 % |
 
-**Spectral harmonisation:** before training, map NAIP/SPOT reflectance to the S2 spectral response, using per-band linear regression on overlapping degraded pixels. This removes sensor bias, so the model learns spatial detail and not colour shifts.
+The browser and Python implementations agree within 0.05 dB on identical scenes.
 
-### 3.4 Validation framework (planned before building, so it can't be gamed)
+**What these numbers do and do not show:** they prove the output stays faithful to what the satellite measured. They do not prove that every reconstructed detail is physically correct. That requires independent high-resolution references, which is the first item in our plan.
 
-**A. Image-quality metrics** (report them, but explain their limits):
-- PSNR, SSIM, LPIPS (perceptual)
-- **Spectral:** SAM (spectral angle), ERGAS, per-band bias
-- **Consistency:** error between the input and the SR output degraded back to 10 m (should be ~0 thanks to the hard constraint)
-- **OpenSR-test** suite: consistency / synthesis / hallucination scores, compared against bicubic, SEN2SR and LDSR-S2
-
-**B. Uncertainty quality:**
-- Calibration: empirical coverage of the conformal intervals vs nominal (e.g. 90% → 89–91%)
-- Error–uncertainty correlation (Spearman); sparsification curves (does error drop when we remove the most uncertain pixels?)
-
-**C. Downstream utility (the most convincing to judges):**
-| Application | Task | Metric | Compare |
-|---|---|---|---|
-| Urban | Building footprint segmentation | IoU / F1, and **small-building recall** | 10 m bicubic vs our 2.5 m vs real HR |
-| Roads | Road extraction | Road completeness/correctness, **narrow-road** recall | same |
-| Agriculture | Field boundary delineation (Indian smallholdings) | Boundary F1, number of parcels detected | same |
-| Water | Water-body edge / small ponds (MNDWI) | Edge accuracy, detection of ponds < 0.1 ha | same |
-| Disaster | Flood extent / landslide / building damage change detection | F1 of change map | same |
-
-**D. Hallucination audit:** run an object detector on SR vs HR, and count "phantom objects" (detected in SR but absent in HR). Show that our uncertainty map flags them.
+### Stage 5 · Product finish
+Interactive 3-D landing page, place search, swipe viewer with zoom, NDVI and uncertainty overlays, automatic metrics, three-layer GeoTIFF export, upload of the user's own Sentinel-2 file, and a downloadable sample scene for evaluators.
 
 ---
 
-## 4. Uniqueness & innovation (how to stand out)
+## 4. What v1 delivers today
 
-Most teams will fine-tune an ESRGAN/SwinIR on some pairs and show pretty pictures. The ten points below make us different, roughly in order of impact:
-
-1. **Trust map with a statistical guarantee (conformal prediction).** Our output isn't just "high uncertainty here". It says "the true reflectance lies in this interval with 90% probability, and here is the proof on held-out data". Very few Sentinel-2 SR works do this, and it answers the PS's uncertainty clause directly.
-2. **Real information vs imagined detail.** Multi-temporal fusion plus a map that separates observed detail (supported by multi-date evidence) from prior-inferred detail. Our pitch line: *"We tell you which pixels are seen and which are guessed."*
-3. **Physics-guaranteed radiometry.** A hard consistency layer using the real Sentinel-2 PSF, so scientific indices (NDVI etc.) stay valid. The live demo: compute NDVI on the input and on the SR output degraded back, and show they are identical.
-4. **Fidelity ↔ Detail dial.** Interactive, with a live uncertainty update. It's memorable in a demo and explains the core trade-off in 5 seconds.
-5. **Task-level proof, not PSNR theatre.** Cite GeoSR-Bench (2026) to argue that PSNR doesn't predict usefulness, then show building/road/field-boundary gains.
-6. **Indian-context validation set ("IndiaSR-Val").** Punjab/Haryana fields, Bengaluru/Delhi urban sprawl, Assam floods, Wayanad landslide area, coastal Odisha. Existing benchmarks are mostly US/Europe, so this shows domain awareness.
-7. **All-band SR** (red-edge + SWIR to 2.5 m), so we can offer 2.5 m NDRE/NBR/MNDWI. Most teams will do RGB only.
-8. **Hallucination audit ("phantom object" count).** A concrete, honest number most teams won't even think to measure.
-9. **Analyst-ready product.** COG GeoTIFF in the same CRS, STAC metadata with a provenance tag ("AI-enhanced, model vX, uncertainty band 11"), a QGIS plugin, a web swipe-viewer and a REST API.
-10. **Deployment fit for a security org.** Runs fully offline, ONNX/TensorRT export, runs on a single consumer GPU, fixed model hashes, audit log. Frame it as *"deployable inside an air-gapped NTRO network."*
-
-**Nice-to-have extras (only if time allows):**
-- **Change-aware SR:** super-resolve a before/after pair jointly for disaster damage assessment, so SR artefacts don't show up as fake changes.
-- **SAR-guided SR under clouds:** use Sentinel-1 as auxiliary structural guidance during the monsoon. This is a strong "India-relevant" angle, but it's a stretch goal.
-- **Resolution-adaptive output:** 5 m / 3.3 m / 2.5 m depending on how much uncertainty the user will accept.
-
----
-
-## 5. Tech stack
-
-| Layer | Tools |
+| Capability | Status |
 |---|---|
-| Data access | Copernicus Data Space Ecosystem (STAC API / openEO / Sentinel Hub), `pystac-client`, `odc-stac` |
-| Geo processing | `rasterio`, `GDAL`, `xarray`, `rioxarray`, `AROSICS` (co-registration), `s2cloudless` / SCL band |
-| DL | PyTorch + Lightning, `timm`, `diffusers` (refiner), `torchmetrics`, `opensr-test` |
-| Uncertainty | Deep ensembles / sample variance, `MAPIE`-style split-conformal (or custom) |
-| Downstream models | `segmentation_models_pytorch` (U-Net), `SAM`/`SAM2` for zero-shot boundaries, YOLO-OBB for buildings |
-| Serving | FastAPI + ONNX Runtime / TensorRT, tiled inference with overlap-blend (Hann window) |
-| Frontend | React + Leaflet/MapLibre (swipe compare, uncertainty overlay, dial) **or** Streamlit for speed; QGIS plugin (Python) |
-| Output | Cloud-Optimized GeoTIFF, STAC item JSON, PDF accuracy report |
-| Compute | Kaggle (free GPU ~30 h/week), Colab, college GPU. Mixed precision, patches of 64→256 px |
-| MLOps | Git + DVC (data versioning), Weights & Biases / MLflow |
+| 4× super-resolution, all 10 bands (10 m → 2.5 m) | Built |
+| Frequency-domain low-pass consistency constraint | Built (from SEN2SR-Lite) |
+| Per-pixel uncertainty (8-fold dihedral ensemble) | Built |
+| Automatic validation: PSNR, spectral angle, ΔNDVI, sharpness | Built |
+| Cloud-aware scene search for any location | Built |
+| In-browser inference (ONNX Runtime Web) | Built |
+| GeoTIFF export in the source projection | Built |
+| Python batch pipeline; FastAPI/Docker service | Built |
+| Fine-tuning on Indian data | Planned |
+| Multi-temporal fusion | Planned |
+| Conformal (calibrated) uncertainty | Planned |
+| Independent HR benchmark and task-level validation | Planned |
 
 ---
 
-## 6. Timeline
+## 5. Plan ahead
 
-> **Check the exact SIH dates on sih.gov.in.** Usual pattern: idea (PPT) submission → internal college hackathon → shortlisting announcement → Grand Finale (36 h, ~Dec). The plan below assumes about **10–12 weeks** from now to the finale. Weeks 1–2 must produce the idea PPT.
+Twelve weeks, six phases. Each phase ends with a measurable deliverable.
 
-### Phase 0: Research & idea submission (Week 1–2)
-- Read the key papers: SEN2SR, LDSR-S2, DiffFuSR, SEN2NAIP, WorldStrat, GeoSR-Bench, OpenSR-test
-- Register on the Copernicus Data Space. Download SEN2NAIPv2, WorldStrat and OpenSR-test
-- Run **baselines**: bicubic + pretrained SEN2SR on 3–4 Indian AOIs, to get real visuals for the PPT
-- Write the idea PPT: problem → architecture diagram → USPs (Section 4) → feasibility → impact → timeline
-- **Deliverable:** idea submission + a working baseline notebook
+| Phase | Weeks | Goal | Deliverable | Exit criterion |
+|---|---|---|---|---|
+| **1 · Data** | 1–3 | Training and reference data | SEN2NAIPv2 + WorldStrat loaders; India reference set (Cartosat tiles requested via NRSC/NTRO, 8–10 AOIs); PSF/MTF degradation model | Data cards; geographically disjoint train/val/test splits |
+| **2 · Fine-tuning** | 3–6 | Adapt the network to Indian landscapes | Fine-tuned backbone (≤ 15 M parameters) with spectral and shift-tolerant losses | Beats v1 on the India reference set without lowering consistency |
+| **3 · Detail** | 6–9 | Recover more real detail | Temporal-attention front-end (4–8 revisits); optional diffusion/flow refiner with a fidelity ↔ detail dial | Higher edge and object recall at equal consistency |
+| **4 · Trust v2** | 8–10 | Calibrated, auditable uncertainty | Conformal prediction intervals; phantom-object hallucination audit; observed-vs-inferred map | Empirical coverage within ±2 % of nominal |
+| **5 · Validation** | 9–11 | Prove usefulness | OpenSR-test and SEN2NAIP cross-sensor scores; building, road, field-boundary and flood/landslide change-detection tests | Measurable task gain over the 10 m input |
+| **6 · Deployment** | 10–12 | Operational readiness | QGIS plug-in, STAC/COG output, offline package for air-gapped use, hardened demo | End-to-end run on an air-gapped machine |
 
-### Phase 1: Data pipeline (Week 3–4)
-- Copernicus STAC fetcher: AOI + date range → cloud-masked, co-registered multi-date stack
-- S2 PSF degradation model + spectral harmonisation for NAIP/SPOT
-- Tiling / patch dataset, train/val/test splits (geographically disjoint!)
-- Start **IndiaSR-Val**: pick 6–10 Indian AOIs. Collect HR references where licensing allows (see Risks)
-- **Deliverable:** `data/` pipeline, dataset cards, a documented degradation model
+### Team roles
 
-### Phase 2: Fidelity backbone (Week 4–6)
-- Single-image Swin/Mamba-lite with the low-frequency hard-constraint layer, 4×, 10 bands
-- Then the multi-temporal version (temporal attention over N dates)
-- Misalignment-tolerant loss, spectral (SAM) loss
-- Evaluate on OpenSR-test and compare with bicubic and SEN2SR
-- **Deliverable:** model v1 plus a metrics table. **Checkpoint: must beat bicubic clearly and be comparable to SEN2SR.**
-
-### Phase 3: Refiner + trust layer (Week 6–8)
-- Residual diffusion / flow-matching refiner (few steps). Sample K=8–16 outputs
-- Uncertainty = sample std (+ ensemble). Split conformal calibration
-- Hallucination map + phantom-object audit
-- Fidelity↔Detail blend
-- **Deliverable:** model v2 + uncertainty calibration plots
-
-### Phase 4: Downstream validation (Week 7–9, parallel)
-- Buildings, roads, field boundaries, water, flood/landslide change detection
-- Compare bicubic 10 m vs SR 2.5 m vs real HR
-- **Deliverable:** a "utility table", the most important slide for the finale
-
-### Phase 5: Product & integration (Week 8–10)
-- FastAPI inference service + tiled large-scene inference + COG/STAC export
-- Web app: AOI draw → fetch → SR → swipe viewer + uncertainty overlay + dial + downstream result toggle
-- QGIS plugin (thin client calling the API, or running local ONNX)
-- ONNX export, benchmark speed (km²/min on a T4 / laptop GPU)
-- **Deliverable:** end-to-end demo
-
-### Phase 6: Hardening & pitch (Week 10–12)
-- Pre-compute demo AOIs, so the finale never depends on the internet
-- Accuracy report PDF, generated automatically for each run
-- Pitch deck + 3-min demo video + README + model card (limitations and ethics)
-- Mock judging Q&A (see Section 8)
-
-### Grand Finale (36 h) plan
-- **Don't train from scratch at the finale.** Arrive with trained models.
-- Hours 0–8: apply judges' or mentors' feedback, fine-tune on any new AOI they give, fix bugs
-- Hours 8–24: polish UI, add one stretch feature (e.g. change-aware SR or SAR guidance)
-- Hours 24–32: full rehearsal, backup video, offline cached data
-- Hours 32–36: final presentations. Keep a buffer.
-
----
-
-## 7. Team roles (team of 6)
-
-| Member | Role |
+| Role | Responsibility |
 |---|---|
-| 1 | **ML lead**: backbone, multi-temporal fusion, training |
-| 2 | **Generative / uncertainty**: diffusion refiner, conformal calibration, hallucination audit |
-| 3 | **Data / GIS engineer**: Copernicus pipeline, co-registration, degradation model, COG/STAC |
-| 4 | **Downstream apps**: segmentation/change detection experiments, utility table |
-| 5 | **Full-stack**: FastAPI, web viewer, QGIS plugin, ONNX deployment |
-| 6 | **Validation & pitch**: IndiaSR-Val curation, metrics/reporting, deck, demo video, Q&A prep |
+| ML lead | Backbone fine-tuning, temporal fusion |
+| Generative & uncertainty | Refiner, conformal calibration, hallucination audit |
+| Data & GIS | Acquisition, co-registration, degradation model, COG/STAC |
+| Applications | Downstream-task experiments and metrics |
+| Full-stack | Web app, ONNX engine, QGIS plug-in, deployment |
+| Validation & presentation | India reference set, reports, documentation, demo |
+
+### Compute and cost
+Training uses free GPU tiers (Kaggle/Colab) and a college GPU; inference runs on any laptop CPU. Sentinel-2 data is free under the Copernicus licence, and the web application is hosted at no cost.
 
 ---
 
-## 8. Likely judge questions — prepare answers
+## 6. Risks and mitigations
 
-- *"Isn't SR just hallucination?"* → Point to the trust map, conformal guarantee, multi-temporal real information, phantom-object audit and fidelity mode.
-- *"How do you validate in India without HR data?"* → Cross-sensor global benchmarks + the IndiaSR-Val subset + downstream task gains + self-consistency metrics.
-- *"Does NDVI stay valid?"* → Hard-constraint layer; show it live.
-- *"Why not just buy Pleiades/Maxar?"* → Cost, coverage, 5-day revisit, historical archive since 2015, and it's free and sovereign-usable.
-- *"How fast? Can it run at scale?"* → Numbers in km²/min, ONNX, tiled inference.
-- *"What if clouds cover the scene?"* → SCL masking, multi-date selection, (stretch) S1 SAR guidance.
-- *"Which model is best: GAN vs diffusion vs transformer?"* → Our hybrid: a transformer for fidelity plus a diffusion residual for detail and uncertainty. Backed by an ablation table.
-
----
-
-## 9. Risks & mitigations
-
-| Risk | Mitigation |
-|---|---|
-| No free HR reference imagery over India | WorldStrat has global (incl. Asia) SPOT pairs. The **Maxar Open Data Program** gives free imagery for disaster events (check which Indian events are covered). **Planet Education & Research** program (3 m) for students. Ask NTRO/mentor for Cartosat reference tiles. Google/Esri basemaps only for *qualitative* visual checks (licensing forbids training use). |
-| Cross-sensor misalignment ruins metrics | AROSICS co-registration + shift-tolerant loss + OpenSR-test's aligned datasets |
-| GPU limits | Small models (≤15 M params), mixed precision, Kaggle + Colab rotation, pre-trained weights |
-| Diffusion too slow for demo | Few-step residual refiner, precomputed samples for demo AOIs, fidelity mode is instant |
-| Overclaiming | Model card with limitations; always show the uncertainty band; label output "AI-enhanced" |
-| Scope creep | Must-haves = Phases 1–5 on RGB+NIR. All-band, SAR and change-aware SR are stretch goals |
+| Risk | Level | Mitigation |
+|---|---|---|
+| Hallucinated detail | High | Hard consistency constraint, uncertainty layer, phantom-object audit (v2) |
+| Domain gap: model pretrained on US imagery | High | Fine-tuning on Indian references; WorldStrat global pairs |
+| Clouds during the monsoon | Medium | 12-month cloud-scored search; multi-date fusion (v2) |
+| No 2.5 m ground truth for arbitrary scenes | Medium | Self-consistency for every product; independent benchmarks in phase 5 |
+| Cross-sensor misalignment in training pairs | Medium | Co-registration and shift-tolerant loss |
+| Scale and compute | Low | Browser for on-demand analysis; tiled GPU batch for large mosaics |
 
 ---
 
-## 10. MVP checklist (minimum to be competitive)
-- [ ] Copernicus fetch → cloud-mask → SR → 2.5 m GeoTIFF with the same CRS
-- [ ] 4× SR on B2/B3/B4/B8 with the hard-consistency layer
-- [ ] Metrics table on OpenSR-test vs bicubic and SEN2SR
-- [ ] Per-pixel uncertainty map (calibrated)
-- [ ] At least 2 downstream demos (buildings + field boundaries or flood)
-- [ ] Web swipe-viewer with uncertainty overlay
+## 7. Why this approach
 
-**Winning extras:** multi-temporal fusion · Fidelity↔Detail dial · all-band SR · IndiaSR-Val · phantom-object audit · QGIS plugin · offline deployment.
-
----
-
-## 11. Key references
-- SEN2SR / radiometrically consistent SR framework (RSE 2025): https://www.sciencedirect.com/science/article/pii/S0034425725006261 · code: https://github.com/ESAOpenSR/SEN2SR
-- OpenSR-test benchmark: https://github.com/ESAOpenSR/opensr-test
-- Trustworthy SR with latent diffusion (LDSR-S2): https://www.semanticscholar.org/paper/27fa48af71d55c671c498649b5a65d57fbed13f4
-- DiffFuSR, all-band diffusion SR: https://arxiv.org/abs/2506.11764
-- SEN2NAIP dataset (Scientific Data): https://www.nature.com/articles/s41597-024-04214-y · HF: https://huggingface.co/datasets/tacofoundation/SEN2NAIPv2
-- MuS2 multi-image benchmark: https://www.nature.com/articles/s41597-023-02538-9
-- Beyond Pretty Pictures (single + multi-image SR): https://arxiv.org/pdf/2505.24799
-- Semantic-guided flow-matching cross-sensor SR: https://arxiv.org/pdf/2510.23816
-- GeoSR-Bench, downstream-task SR benchmark: https://arxiv.org/abs/2605.00310
-- Domain gap in cross-sensor diffusion SR: https://arxiv.org/pdf/2606.28039
-- Bhuvan free data: https://bhuvan.nrsc.gov.in/wiki/index.php/Free_Satellite_Data_Download
-- Copernicus Browser (dataset link from PS): https://browser.dataspace.copernicus.eu
+- **It is honest.** Every product carries its own uncertainty and validation report, so an analyst can tell observed detail from inferred detail.
+- **It already works.** The prototype is live and measured, not a proposal.
+- **It deploys where NTRO needs it.** A 19 MB model with no server dependency runs offline on standard hardware.
+- **It has a clear path to rigour.** Each planned phase closes a specific gap with a measurable exit criterion.

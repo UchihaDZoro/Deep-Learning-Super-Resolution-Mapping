@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "prototype"))
+sys.path.insert(0, str(ROOT / "pipeline"))
 import run_sr  # noqa: E402
 
 RESULTS = Path(os.environ.get("RESULTS_DIR", "/tmp/trinetra_results"))
