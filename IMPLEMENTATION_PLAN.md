@@ -109,7 +109,7 @@ Interactive 3-D landing page, place search, swipe viewer with zoom, NDVI and unc
 
 ## 5. Plan ahead
 
-Twelve weeks, six phases. Each phase ends with a measurable deliverable.
+Six phases. Each phase ends with a measurable deliverable.
 
 | Phase | Goal | Deliverable | Exit criterion |
 |---|---|---|---|
